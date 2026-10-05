@@ -274,6 +274,45 @@
   .trend-btn.active::before { background: var(--accent); }
   .trend-readout { margin-top: 6px; font-size: 0.82rem; color: var(--ink); }
   .trend-readout .trend-note { color: var(--stone); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.78rem; }
+  .sel-badge {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem;
+    background: color-mix(in srgb, var(--accent) 15%, var(--panel)); color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: 999px; padding: 1px 8px; margin-right: 4px; vertical-align: baseline;
+  }
+  .clear-selection-btn {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 0.75rem; color: var(--accent-2);
+    background: transparent; border: none; padding: 2px 4px; cursor: pointer; text-decoration: underline;
+  }
+  .clear-selection-btn:hover { opacity: 0.8; }
+  canvas.chart-canvas { touch-action: pan-y; }
+
+  /* ---------- mobile readability ---------- */
+  @media (max-width: 640px) {
+    :root { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    .headbar { padding: 12px 16px; }
+    section { padding: 44px 0; }
+    .hero { padding: 40px 0 0; }
+    .hero p.lede { font-size: 1rem; }
+    .stat-strip { grid-template-columns: 1fr 1fr; }
+    .stat { padding: 16px 12px; }
+    .chart-card { padding: 16px 14px; }
+    .chart-head { flex-direction: column; gap: 4px; }
+    .chart-toolbar { gap: 8px; }
+    .range-btn { padding: 7px 9px; font-size: 0.7rem; }
+    .trend-btn { padding: 6px 10px; }
+    .reset-zoom-btn { padding: 6px 4px; }
+    .chart-hint { font-size: 0.7rem; line-height: 1.45; }
+    .live-charts { gap: 20px; margin-top: 26px; }
+    .data-side dl { grid-template-columns: 1fr; row-gap: 2px; margin-bottom: 10px; }
+    .data-side dd { text-align: left; margin-bottom: 8px; }
+    .contact-card { padding: 20px 18px; }
+    .notice { padding: 20px 18px; }
+    table.spec-table th, table.spec-table td { padding: 10px 4px; }
+  }
+  /* keep buttons comfortably tappable */
+  .range-btn, .trend-btn, .lang-btn, .reset-zoom-btn { min-height: 30px; }
 
   .adv-list { max-width: 72ch; }
   .adv-item { padding: 22px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 22px 1fr; gap: 18px; }
@@ -520,10 +559,10 @@ Position actuelle : 34.50 mm</div>
             <button type="button" class="reset-zoom-btn" data-chart="position" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
-        <div class="chart-canvas-wrap"><canvas id="chartPosition"></canvas></div>
+        <div class="chart-canvas-wrap"><canvas id="chartPosition" class="chart-canvas"></canvas></div>
         <div class="chart-foot" id="chartFootPosition" data-i18n="live.loading">Chargement des données…</div>
         <div class="trend-readout mono" id="trendPosition"></div>
-        <div class="chart-hint" data-i18n="live.zoomHint">Molette pour zoomer &middot; glisser pour déplacer</div>
+        <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
       </div>
       <div class="chart-card">
         <div class="chart-head">
@@ -544,10 +583,10 @@ Position actuelle : 34.50 mm</div>
             <button type="button" class="reset-zoom-btn" data-chart="relposition" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
-        <div class="chart-canvas-wrap"><canvas id="chartRelPosition"></canvas></div>
+        <div class="chart-canvas-wrap"><canvas id="chartRelPosition" class="chart-canvas"></canvas></div>
         <div class="chart-foot" id="chartFootRelPosition" data-i18n="live.loading">Chargement des données…</div>
         <div class="trend-readout mono" id="trendRelPosition"></div>
-        <div class="chart-hint" data-i18n="live.zoomHint">Molette pour zoomer &middot; glisser pour déplacer</div>
+        <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
       </div>
       <div class="chart-card">
         <div class="chart-head">
@@ -568,10 +607,10 @@ Position actuelle : 34.50 mm</div>
             <button type="button" class="reset-zoom-btn" data-chart="battery" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
-        <div class="chart-canvas-wrap"><canvas id="chartBattery"></canvas></div>
+        <div class="chart-canvas-wrap"><canvas id="chartBattery" class="chart-canvas"></canvas></div>
         <div class="chart-foot" id="chartFootBattery" data-i18n="live.loading">Chargement des données…</div>
         <div class="trend-readout mono" id="trendBattery"></div>
-        <div class="chart-hint" data-i18n="live.zoomHint">Molette pour zoomer &middot; glisser pour déplacer</div>
+        <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
       </div>
     </div>
   </div>
@@ -821,13 +860,15 @@ Position actuelle : 34.50 mm</div>
       "live.since": "Depuis le 29.09.2026, 12h49",
       "live.loading": "Chargement des données…",
       "live.resetZoom": "Réinitialiser le zoom",
-      "live.zoomHint": "Molette pour zoomer &middot; glisser pour déplacer",
+      "live.zoomHint": "Glisser : sélectionner une zone (zoom + tendance) &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom &middot; pincer : zoom",
       "live.trendToggle": "Tendance",
       "live.trendRising": "Tendance : +{rate} mm / semaine",
       "live.trendFalling": "Tendance : {rate} mm / semaine",
       "live.trendFlat": "Tendance : stable",
       "live.trendNote": "Régression linéaire sur la période affichée — s'affine avec l'historique disponible.",
       "live.trendInsufficient": "Pas encore assez de données pour une tendance fiable.",
+      "live.selectionLabel": "Sélection",
+      "live.clearSelection": "Effacer la sélection",
       "data.qrText": "Scanner pour voir les données en direct sur<br><a href=\"https://opensensemap.org/explore/6a7edd0df28f8a0007ce2172\" target=\"_blank\" rel=\"noopener\">opensensemap.org</a>",
       "adv.h2": "Avantages clés",
       "adv1.title": "Installation simple et rapide",
@@ -952,13 +993,15 @@ Position actuelle : 34.50 mm</div>
       "live.since": "Since Sep 29, 2026, 12:49",
       "live.loading": "Loading data…",
       "live.resetZoom": "Reset zoom",
-      "live.zoomHint": "Scroll to zoom &middot; drag to pan",
+      "live.zoomHint": "Drag: select a zone (zoom + trend) &middot; Shift + drag: pan &middot; Ctrl + scroll: zoom &middot; pinch: zoom",
       "live.trendToggle": "Trend",
       "live.trendRising": "Trend: +{rate} mm / week",
       "live.trendFalling": "Trend: {rate} mm / week",
       "live.trendFlat": "Trend: stable",
       "live.trendNote": "Linear regression over the displayed period — becomes more reliable as history accumulates.",
       "live.trendInsufficient": "Not enough data yet for a reliable trend.",
+      "live.selectionLabel": "Selection",
+      "live.clearSelection": "Clear selection",
       "data.qrText": "Scan to see live data on<br><a href=\"https://opensensemap.org/explore/6a7edd0df28f8a0007ce2172\" target=\"_blank\" rel=\"noopener\">opensensemap.org</a>",
       "adv.h2": "Key advantages",
       "adv1.title": "Simple, fast installation",
@@ -1083,13 +1126,15 @@ Position actuelle : 34.50 mm</div>
       "live.since": "Seit dem 29.09.2026, 12:49 Uhr",
       "live.loading": "Daten werden geladen…",
       "live.resetZoom": "Zoom zurücksetzen",
-      "live.zoomHint": "Mausrad zum Zoomen &middot; ziehen zum Verschieben",
+      "live.zoomHint": "Ziehen: Zone auswählen (Zoom + Trend) &middot; Umschalt + Ziehen: Verschieben &middot; Strg + Mausrad: Zoom &middot; Pinch: Zoom",
       "live.trendToggle": "Trend",
       "live.trendRising": "Trend: +{rate} mm / Woche",
       "live.trendFalling": "Trend: {rate} mm / Woche",
       "live.trendFlat": "Trend: stabil",
       "live.trendNote": "Lineare Regression über den angezeigten Zeitraum — wird mit mehr Verlaufsdaten zuverlässiger.",
       "live.trendInsufficient": "Noch nicht genug Daten für einen zuverlässigen Trend.",
+      "live.selectionLabel": "Auswahl",
+      "live.clearSelection": "Auswahl löschen",
       "data.qrText": "Scannen für Live-Daten auf<br><a href=\"https://opensensemap.org/explore/6a7edd0df28f8a0007ce2172\" target=\"_blank\" rel=\"noopener\">opensensemap.org</a>",
       "adv.h2": "Wichtigste Vorteile",
       "adv1.title": "Einfache, schnelle Installation",
@@ -1329,6 +1374,8 @@ Position actuelle : 34.50 mm</div>
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-luxon/1.3.1/chartjs-adapter-luxon.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.2.0/chartjs-plugin-zoom.min.js"></script>
 <script>
 (function() {
@@ -1356,9 +1403,9 @@ Position actuelle : 34.50 mm</div>
 
   // full fetched datasets, kept in memory so range buttons can filter without refetching
   var store = {
-    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true },
-    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true },
-    battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true }
+    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, selection: null },
+    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true, selection: null },
+    battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true, selection: null }
   };
 
   function downsample(arr, maxPoints) {
@@ -1423,29 +1470,69 @@ Position actuelle : 34.50 mm</div>
   }
 
 
-  // moving-average smoothing: returns a gently undulating curve that follows
-  // the local tendency of the data instead of a straight regression line
-  function smoothTrendValues(points, windowSize) {
+  // ---- time-proportional smoothing ------------------------------------
+  // window is a TIME span (ms), not a number of points: points that happen
+  // to be closer together do not make the curve "denser" or steeper locally
+  function smoothTrendValuesTime(points, windowMs) {
     if (points.length < 3) return null;
-    var half = Math.max(1, Math.floor(windowSize / 2));
+    var half = windowMs / 2;
     var out = new Array(points.length);
     for (var i = 0; i < points.length; i++) {
-      var from = Math.max(0, i - half);
-      var to = Math.min(points.length - 1, i + half);
-      var sum = 0;
-      for (var j = from; j <= to; j++) sum += points[j].y;
-      out[i] = sum / (to - from + 1);
+      var ti = points[i].x.getTime();
+      var lo = ti - half, hi = ti + half;
+      var jFrom = i, jTo = i, sum = 0, count = 0;
+      while (jFrom > 0 && points[jFrom - 1].x.getTime() >= lo) jFrom--;
+      while (jTo < points.length - 1 && points[jTo + 1].x.getTime() <= hi) jTo++;
+      for (var j = jFrom; j <= jTo; j++) { sum += points[j].y; count++; }
+      out[i] = { x: points[i].x, y: sum / count };
     }
     return out;
   }
 
+  // choose a smoothing window so the trend has ~12 gentle undulations over
+  // the visible time span regardless of how many points there are
+  function pickWindowMs(points) {
+    var t0 = points[0].x.getTime(), t1 = points[points.length - 1].x.getTime();
+    var span = Math.max(t1 - t0, 1);
+    return Math.max(span / 12, 60 * 60 * 1000); // at least 1h
+  }
+
+  // ---- time-based x scale helpers -------------------------------------
+  function currentVisibleRange(chart) {
+    var sc = chart.scales.x;
+    if (sc && typeof sc.min === 'number' && typeof sc.max === 'number' && sc.max > sc.min) {
+      return { min: sc.min, max: sc.max };
+    }
+    var pts = (chart.data.datasets[0].data || []);
+    return { min: pts.length ? pts[0].x.getTime() : 0, max: pts.length ? pts[pts.length - 1].x.getTime() : 1 };
+  }
+
+  // keep the same pixels-per-millisecond ratio when re-rendering after a
+  // range/trend change, unless we are doing a full reset
+  function computeTimeBounds(chart, points, preserveScale) {
+    var dmin = points[0].x.getTime();
+    var dmax = points[points.length - 1].x.getTime();
+    if (dmax <= dmin) dmax = dmin + 1000;
+    var pad = (dmax - dmin) * 0.01;
+    var min = dmin - pad, max = dmax + pad;
+    if (preserveScale && chart._lastFullSpan) {
+      var vis = currentVisibleRange(chart);
+      var pxPerMs = (vis.max - vis.min) / (chart.chartArea ? chart.chartArea.width : 300);
+      var newMin = vis.min - pxPerMs * pad * 2;
+      var newMax = vis.max + pxPerMs * pad * 2;
+      return { min: Math.max(newMin, min), max: Math.min(newMax, max), reset: false };
+    }
+    return { min: min, max: max, reset: true };
+  }
+
   function buildChart(canvas, points, color, showTrend, unit) {
     unit = unit || 'mm';
-    var sampled = downsample(points, 300);
     var colors = getColors();
-    var trend = showTrend ? smoothTrendValues(sampled, Math.max(5, Math.ceil(sampled.length / 12))) : null;
+    var series = points.map(function(p) { return { x: p.x, y: p.y }; });
+    var trend = showTrend ? smoothTrendValuesTime(points, pickWindowMs(points)) : null;
     var datasets = [{
-      data: sampled.map(function(p) { return p.y; }),
+      label: 'series',
+      data: series,
       borderColor: color,
       backgroundColor: 'transparent',
       borderWidth: 1.75,
@@ -1458,6 +1545,7 @@ Position actuelle : 34.50 mm</div>
     }];
     if (trend) {
       datasets.push({
+        label: 'trend',
         data: trend,
         borderColor: colors.ink,
         backgroundColor: 'transparent',
@@ -1470,50 +1558,89 @@ Position actuelle : 34.50 mm</div>
         order: 0
       });
     }
-    return new Chart(canvas.getContext('2d'), {
+    var bounds = computeTimeBounds({ _lastFullSpan: false, chartArea: null }, points, false);
+    var chart = new Chart(canvas.getContext('2d'), {
       type: 'line',
-      data: {
-        labels: sampled.map(function(p) { return formatLabel(p.x); }),
-        datasets: datasets
-      },
+      data: { datasets: datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
         plugins: {
           legend: { display: false },
+          crackmeterSelection: { showBand: true },
           tooltip: {
             filter: function(ctx) { return ctx.datasetIndex === 0; },
             callbacks: {
+              title: function(items) {
+                if (!items.length) return '';
+                var d = new Date(typeof items[0].parsed.x === 'number' ? items[0].parsed.x : items[0].raw.x);
+                return formatLabel(d);
+              },
               label: function(ctx) { return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit; }
             }
           },
           zoom: {
-            pan: { enabled: true, mode: 'x' },
+            pan: { enabled: true, mode: 'x', modifierKey: (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? null : 'shift' },
             zoom: {
-              wheel: { enabled: true, speed: 0.08 },
+              drag: {
+                enabled: !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches),
+                backgroundColor: 'rgba(193,96,27,0.15)',
+                borderColor: 'rgba(193,96,27,0.6)',
+                borderWidth: 1
+              },
+              wheel: { enabled: true, speed: 0.08, modifierKey: 'ctrl' },
               pinch: { enabled: true },
-              mode: 'x'
+              mode: 'x',
+              onZoomComplete: function(ctx) {
+                var ch = ctx.chart;
+                ch._zoomed = true;
+                // when the zoom came from a drag-selection, compute stats for that zone
+                var zs = ch._lastZoomStart;
+                ch._lastZoomStart = null;
+                if (zs && typeof zs.xMin === 'number' && typeof zs.xMax === 'number' && zs.xMax > zs.xMin + 1000) {
+                  finalizeSelection(ch, zs.xMin, zs.xMax, true);
+                  return;
+                }
+                hideSelectionReadout(ch);
+              }
             },
             limits: { x: { min: 'original', max: 'original' } }
           }
         },
         scales: {
-          x: { ticks: { color: colors.ink, maxTicksLimit: 6, font: { family: 'IBM Plex Mono', size: 10 } }, grid: { display: false } },
+          x: {
+            type: 'time',
+            min: bounds.min,
+            max: bounds.max,
+            time: {
+              tooltipFormat: 'dd.MM.yyyy HH:mm',
+              displayFormats: {
+                millisecond: 'HH:mm:ss', second: 'HH:mm:ss', minute: 'HH:mm',
+                hour: 'HH:mm', day: 'dd.MM.', week: 'dd.MM.', month: 'MMM yy'
+              }
+            },
+            ticks: { color: colors.ink, maxTicksLimit: 6, source: 'auto', font: { family: 'IBM Plex Mono', size: 10 } },
+            grid: { display: false }
+          },
           y: { ticks: { color: colors.ink, font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: colors.grid } }
         }
       }
     });
+    chart._lastFullSpan = bounds.max - bounds.min;
+    chart._unit = unit;
+    return chart;
   }
 
-  function updateChart(chart, points, color, showTrend, unit) {
+  function updateChart(chart, points, color, showTrend, unit, preserveScale) {
     unit = unit || 'mm';
-    var sampled = downsample(points, 300);
-    var trend = showTrend ? smoothTrendValues(sampled, Math.max(5, Math.ceil(sampled.length / 12))) : null;
+    chart._unit = unit;
+    var series = points.map(function(p) { return { x: p.x, y: p.y }; });
+    var trend = showTrend ? smoothTrendValuesTime(points, pickWindowMs(points)) : null;
     var colors = getColors();
-    chart.data.labels = sampled.map(function(p) { return formatLabel(p.x); });
-    chart.data.datasets[0].data = sampled.map(function(p) { return p.y; });
+    chart.data.datasets[0].data = series;
+    chart.data.datasets[0].borderColor = color;
     if (chart.options.plugins.tooltip.callbacks.label) {
       chart.options.plugins.tooltip.callbacks.label = function(ctx) {
         return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
@@ -1524,7 +1651,7 @@ Position actuelle : 34.50 mm</div>
         chart.data.datasets[1].data = trend;
       } else {
         chart.data.datasets.push({
-          data: trend, borderColor: colors.ink, backgroundColor: 'transparent',
+          label: 'trend', data: trend, borderColor: colors.ink, backgroundColor: 'transparent',
           borderWidth: 1.25, borderDash: [5, 4], pointRadius: 0, pointHitRadius: 0,
           tension: 0.5, spanGaps: true, order: 0
         });
@@ -1532,7 +1659,29 @@ Position actuelle : 34.50 mm</div>
     } else if (chart.data.datasets.length > 1) {
       chart.data.datasets.splice(1, 1);
     }
-    if (chart.resetZoom) chart.resetZoom();
+    if (preserveScale && !chart._zoomed) {
+      // keep the current time-window width (uniform temporal scale)
+      var vis = currentVisibleRange(chart);
+      var width = vis.max - vis.min;
+      var dmin = points[0].x.getTime(), dmax = points[points.length - 1].x.getTime();
+      var min = Math.max(dmin - (dmax - dmin) * 0.01, vis.min);
+      var max = Math.min(dmax + (dmax - dmin) * 0.01, min + width);
+      if (max - min < 1000) { min = dmin; max = dmax + 1000; }
+      chart.options.scales.x.min = min;
+      chart.options.scales.x.max = max;
+    } else {
+      var bounds = computeTimeBounds(chart, points, preserveScale && !chart._zoomed);
+      chart.options.scales.x.min = bounds.min;
+      chart.options.scales.x.max = bounds.max;
+      if (!preserveScale) {
+        chart._zoomed = false;
+        chart._lastFullSpan = bounds.max - bounds.min;
+      }
+    }
+    if (chart._selRange) {
+      var sm = chart.options.scales.x.min, sx = chart.options.scales.x.max;
+      if (chart._selRange.to < sm || chart._selRange.from > sx) chart._selRange = null;
+    }
     chart.update('none');
   }
 
@@ -1546,7 +1695,12 @@ Position actuelle : 34.50 mm</div>
     var el = document.getElementById(key === 'position' ? 'trendPosition' : (key === 'battery' ? 'trendBattery' : 'trendRelPosition'));
     if (!el) return;
     var entry = store[key];
-    if (!entry.showTrend) { el.innerHTML = ''; return; }
+    if (!entry.showTrend && !entry.selection) { el.innerHTML = ''; return; }
+    // selection-specific readout takes priority
+    if (entry.selection) {
+      renderSelectionReadout(el, key, entry.selection);
+      return;
+    }
     if (points.length < 6) {
       el.innerHTML = '<span class="trend-note">' + i18nGet('live.trendInsufficient') + '</span>';
       return;
@@ -1579,14 +1733,116 @@ Position actuelle : 34.50 mm</div>
     return key;
   }
 
-  function renderEntry(key, canvas) {
+  // ---- selection readout ------------------------------------------------
+  function findKeyForChart(chart) {
+    for (var k in store) { if (store[k].chart === chart) return k; }
+    return null;
+  }
+
+  function renderSelectionReadout(el, key, sel) {
+    var unit = key === 'battery' ? 'V' : 'mm';
+    var digits = key === 'battery' ? 4 : 3;
+    var threshold = key === 'battery' ? 0.0005 : 0.001;
+    var perWeek = sel.reg ? sel.reg.slope * 7 * 24 * 60 * 60 * 1000 : null;
+    var html = '<span class="sel-badge">' + i18nGet('live.selectionLabel') + '</span> ';
+    html += formatLabel(new Date(sel.from)) + ' → ' + formatLabel(new Date(sel.to));
+    html += ' &middot; n=' + sel.count;
+    if (perWeek !== null) {
+      var rateStr = Math.abs(perWeek).toFixed(digits).replace('.', ',');
+      if (Math.abs(perWeek) < threshold) {
+        html += '<br>' + i18nGet('live.trendFlat');
+      } else if (perWeek > 0) {
+        html += '<br>' + i18nGet('live.trendRising').replace('{rate}', rateStr).replace('mm', unit);
+      } else {
+        html += '<br>' + i18nGet('live.trendFalling').replace('{rate}', '-' + rateStr).replace('mm', unit);
+      }
+    } else {
+      html += '<br><span class="trend-note">' + i18nGet('live.trendInsufficient') + '</span>';
+    }
+    html += ' <button type="button" class="clear-selection-btn" data-chart="' + key + '">' + i18nGet('live.clearSelection') + '</button>';
+    el.innerHTML = html;
+    var btn = el.querySelector('.clear-selection-btn');
+    if (btn) {
+      btn.addEventListener('click', function() {
+        delete store[key].selection;
+        renderEntry(key, canvasForKey(key), true);
+      });
+    }
+  }
+
+  function hideSelectionReadout(chart) {
+    var key = findKeyForChart(chart);
+    if (key && store[key].selection) {
+      delete store[key].selection;
+      renderTrendReadout(key, filterByRange(store[key].points, store[key].range));
+    }
+  }
+
+  // custom plugin: records the drag-selection range so onZoomComplete can
+  // compute statistics for exactly that zone, and keeps a subtle band visible
+  var selectionPlugin = {
+    id: 'crackmeterSelection',
+    beforeZoom: function(chart, args) {
+      chart._lastZoomStart = args && args.scale ? { xMin: args.scale.min, xMax: args.scale.max } : null;
+    },
+    afterDraw: function(chart, args, opts) {
+      if (opts && opts.showBand && chart._selRange) {
+        var x = chart.scales.x, area2 = chart.chartArea;
+        if (!x || !area2) return;
+        var px1 = Math.max(x.getPixelForValue(chart._selRange.from), area2.left);
+        var px2 = Math.min(x.getPixelForValue(chart._selRange.to), area2.right);
+        if (px2 <= px1) return;
+        var ctx2 = chart.ctx;
+        ctx2.save();
+        ctx2.fillStyle = 'rgba(193,96,27,0.08)';
+        ctx2.fillRect(px1, area2.top, px2 - px1, area2.bottom - area2.top);
+        ctx2.strokeStyle = 'rgba(193,96,27,0.4)';
+        ctx2.setLineDash([3, 3]);
+        ctx2.beginPath();
+        ctx2.moveTo(px1 + 0.5, area2.top); ctx2.lineTo(px1 + 0.5, area2.bottom);
+        ctx2.moveTo(px2 - 0.5, area2.top); ctx2.lineTo(px2 - 0.5, area2.bottom);
+        ctx2.stroke();
+        ctx2.restore();
+      }
+    }
+  };
+
+  function finalizeSelection(chart, t1, t2, keepCurrentZoom) {
+    var key = findKeyForChart(chart);
+    if (!key) return;
+    var entry = store[key];
+    var from = Math.max(t1, chart.options.scales.x.min || t1);
+    var to = Math.min(t2, chart.options.scales.x.max || t2);
+    if (!keepCurrentZoom) {
+      // zoom into the selected zone (uniform temporal scale preserved)
+      var pad = (to - from) * 0.02;
+      chart.options.scales.x.min = from - pad;
+      chart.options.scales.x.max = to + pad;
+      chart._zoomed = true;
+    } else {
+      from = t1; to = t2;
+    }
+    // compute stats on ALL raw points inside the zone (not the visible subset)
+    var selPoints = entry.points.filter(function(p) {
+      var t = p.x.getTime();
+      return t >= from && t <= to;
+    });
+    var reg = linearRegression(selPoints);
+    entry.selection = { from: from, to: to, count: selPoints.length, reg: reg };
+    chart._selRange = { from: from, to: to };
+    chart.update('none');
+    renderTrendReadout(key, selPoints);
+  }
+
+  function renderEntry(key, canvas, preserveScale) {
     var entry = store[key];
     var unit = key === 'battery' ? 'V' : 'mm';
     var filtered = filterByRange(entry.points, entry.range);
     if (!entry.chart) {
+      Chart.register(selectionPlugin);
       entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit);
     } else {
-      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit);
+      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit, preserveScale);
     }
     renderTrendReadout(key, filtered);
   }
@@ -1627,7 +1883,7 @@ Position actuelle : 34.50 mm</div>
     refreshOne('battery', SENSOR_BATTERY, battCanvas, 'liveValueBattery', 'chartFootBattery');
   }
 
-  // range-button wiring
+  // range-button wiring (full re-fit: zoom and selection are cleared)
   document.querySelectorAll('.range-group').forEach(function(group) {
     var key = group.getAttribute('data-chart');
     group.querySelectorAll('.range-btn').forEach(function(btn) {
@@ -1635,7 +1891,9 @@ Position actuelle : 34.50 mm</div>
         group.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
         store[key].range = btn.getAttribute('data-range');
-        renderEntry(key, canvasForKey(key));
+        store[key].selection = null;
+        if (store[key].chart) { store[key].chart._selRange = null; store[key].chart._zoomed = false; }
+        renderEntry(key, canvasForKey(key), false);
       });
     });
   });
@@ -1645,17 +1903,23 @@ Position actuelle : 34.50 mm</div>
     btn.addEventListener('click', function() {
       var key = btn.getAttribute('data-chart');
       var chart = store[key].chart;
-      if (chart && chart.resetZoom) chart.resetZoom();
+      store[key].selection = null;
+      if (chart) {
+        chart._selRange = null;
+        chart._zoomed = false;
+        if (chart.resetZoom) chart.resetZoom();
+      }
+      renderEntry(key, canvasForKey(key), false);
     });
   });
 
-  // trend toggle wiring
+  // trend toggle wiring (keeps the current time window / scale)
   document.querySelectorAll('.trend-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var key = btn.getAttribute('data-chart');
       store[key].showTrend = !store[key].showTrend;
       btn.classList.toggle('active', store[key].showTrend);
-      renderEntry(key, canvasForKey(key));
+      renderEntry(key, canvasForKey(key), true);
     });
   });
 
