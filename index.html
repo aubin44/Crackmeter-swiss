@@ -862,8 +862,8 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Réinitialiser le zoom",
       "live.zoomHint": "Glisser : sélectionner une zone (zoom + tendance) &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom &middot; pincer : zoom",
       "live.trendToggle": "Tendance",
-      "live.trendRising": "Tendance : +{rate} mm / semaine",
-      "live.trendFalling": "Tendance : {rate} mm / semaine",
+      "live.trendRising": "Tendance : +{rate} {unit}/semaine",
+      "live.trendFalling": "Tendance : {rate} {unit}/semaine",
       "live.trendFlat": "Tendance : stable",
       "live.trendNote": "Régression linéaire sur la période affichée — s'affine avec l'historique disponible.",
       "live.trendInsufficient": "Pas encore assez de données pour une tendance fiable.",
@@ -995,8 +995,8 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Reset zoom",
       "live.zoomHint": "Drag: select a zone (zoom + trend) &middot; Shift + drag: pan &middot; Ctrl + scroll: zoom &middot; pinch: zoom",
       "live.trendToggle": "Trend",
-      "live.trendRising": "Trend: +{rate} mm / week",
-      "live.trendFalling": "Trend: {rate} mm / week",
+      "live.trendRising": "Trend: +{rate} {unit}/week",
+      "live.trendFalling": "Trend: {rate} {unit}/week",
       "live.trendFlat": "Trend: stable",
       "live.trendNote": "Linear regression over the displayed period — becomes more reliable as history accumulates.",
       "live.trendInsufficient": "Not enough data yet for a reliable trend.",
@@ -1128,8 +1128,8 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Zoom zurücksetzen",
       "live.zoomHint": "Ziehen: Zone auswählen (Zoom + Trend) &middot; Umschalt + Ziehen: Verschieben &middot; Strg + Mausrad: Zoom &middot; Pinch: Zoom",
       "live.trendToggle": "Trend",
-      "live.trendRising": "Trend: +{rate} mm / Woche",
-      "live.trendFalling": "Trend: {rate} mm / Woche",
+      "live.trendRising": "Trend: +{rate} {unit}/Woche",
+      "live.trendFalling": "Trend: {rate} {unit}/Woche",
       "live.trendFlat": "Trend: stabil",
       "live.trendNote": "Lineare Regression über den angezeigten Zeitraum — wird mit mehr Verlaufsdaten zuverlässiger.",
       "live.trendInsufficient": "Noch nicht genug Daten für einen zuverlässigen Trend.",
@@ -1524,6 +1524,20 @@ Position actuelle : 34.50 mm</div>
     return { min: pts.length ? pts[0].x.getTime() : 0, max: pts.length ? pts[pts.length - 1].x.getTime() : 1 };
   }
 
+  // regression computed only on the points currently visible in the x range
+  // (used to make the trend readout follow manual zooms)
+  function visibleRegression(chart, key) {
+    var entry = store[key];
+    if (!entry || !entry.chart) return null;
+    var vis = currentVisibleRange(entry.chart);
+    var pts = entry.points.filter(function(p) {
+      var t = p.x.getTime();
+      return t >= vis.min && t <= vis.max;
+    });
+    if (pts.length < 2) return null;
+    return linearRegression(pts);
+  }
+
   // keep the same pixels-per-millisecond ratio when re-rendering after a
   // range/trend change, unless we are doing a full reset
   function computeTimeBounds(chart, points, preserveScale) {
@@ -1599,7 +1613,12 @@ Position actuelle : 34.50 mm</div>
             }
           },
           zoom: {
-            pan: { enabled: true, mode: 'x', modifierKey: (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? null : 'shift' },
+            pan: { enabled: true, mode: 'x', modifierKey: (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? null : 'shift', onPanComplete: function(ctx) {
+              var ch = ctx.chart;
+              ch._zoomed = true;
+              var k = findKeyForChart(ch);
+              if (k) renderTrendReadout(k, filterByRange(store[k].points, store[k].range));
+            } },
             zoom: {
               drag: {
                 enabled: !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches),
@@ -1621,6 +1640,8 @@ Position actuelle : 34.50 mm</div>
                   return;
                 }
                 hideSelectionReadout(ch);
+                var k = findKeyForChart(ch);
+                if (k) renderTrendReadout(k, filterByRange(store[k].points, store[k].range));
               }
             },
             limits: { x: { min: 'original', max: 'original' } }
@@ -1722,21 +1743,21 @@ Position actuelle : 34.50 mm</div>
       el.innerHTML = '<span class="trend-note">' + i18nGet('live.trendInsufficient') + '</span>';
       return;
     }
+    var unit = key === 'battery' ? 'V' : 'mm';
+    var digits = key === 'battery' ? 4 : 3;
+    // when the user has manually zoomed/panned, compute the trend only on the
+    // points currently visible in the chart window instead of the full range
+    var ch = store[key] && store[key].chart;
+    if (ch && ch._zoomed) {
+      var visReg = visibleRegression(ch, key);
+      if (visReg) {
+        el.innerHTML = trendSentence(formatTrendRate(visReg), unit, digits) + ' &mdash; <span class="trend-note">' + i18nGet('live.trendNote') + '</span>';
+        return;
+      }
+    }
     var reg = linearRegression(points);
     var perWeek = formatTrendRate(reg);
-    var unit = key === 'battery' ? 'V' : 'mm';
-    var threshold = key === 'battery' ? 0.0005 : 0.001;
-    var digits = key === 'battery' ? 4 : 3;
-    var rateStr = Math.abs(perWeek).toFixed(digits).replace('.', ',');
-    var main;
-    if (Math.abs(perWeek) < threshold) {
-      main = i18nGet('live.trendFlat');
-    } else if (perWeek > 0) {
-      main = i18nGet('live.trendRising').replace('{rate}', rateStr).replace('mm', unit);
-    } else {
-      main = i18nGet('live.trendFalling').replace('{rate}', '-' + rateStr).replace('mm', unit);
-    }
-    el.innerHTML = main + ' &mdash; <span class="trend-note">' + i18nGet('live.trendNote') + '</span>';
+    el.innerHTML = trendSentence(perWeek, unit, digits) + ' &mdash; <span class="trend-note">' + i18nGet('live.trendNote') + '</span>';
   }
 
   function i18nGet(key) {
@@ -1750,6 +1771,23 @@ Position actuelle : 34.50 mm</div>
     return key;
   }
 
+  // build the localized trend sentence for a given rate (y units per week);
+  // uses the {unit} placeholder so every language keeps its natural word order
+  function trendSentence(perWeek, unit, digits) {
+    if (perWeek === null || !isFinite(perWeek)) return '<span class="trend-note">' + i18nGet('live.trendInsufficient') + '</span>';
+    var threshold = unit === 'V' ? 0.0005 : 0.001;
+    var rateStr = Math.abs(perWeek).toFixed(digits).replace('.', ',');
+    var main;
+    if (Math.abs(perWeek) < threshold) {
+      main = i18nGet('live.trendFlat');
+    } else if (perWeek > 0) {
+      main = i18nGet('live.trendRising').replace('{rate}', '+' + rateStr).replace('{unit}', unit);
+    } else {
+      main = i18nGet('live.trendFalling').replace('{rate}', '-' + rateStr).replace('{unit}', unit);
+    }
+    return main;
+  }
+
   // ---- selection readout ------------------------------------------------
   function findKeyForChart(chart) {
     for (var k in store) { if (store[k].chart === chart) return k; }
@@ -1759,23 +1797,11 @@ Position actuelle : 34.50 mm</div>
   function renderSelectionReadout(el, key, sel) {
     var unit = key === 'battery' ? 'V' : 'mm';
     var digits = key === 'battery' ? 4 : 3;
-    var threshold = key === 'battery' ? 0.0005 : 0.001;
     var perWeek = sel.reg ? sel.reg.slope * 7 * 24 * 60 * 60 * 1000 : null;
     var html = '<span class="sel-badge">' + i18nGet('live.selectionLabel') + '</span> ';
     html += formatLabel(new Date(sel.from)) + ' → ' + formatLabel(new Date(sel.to));
     html += ' &middot; n=' + sel.count;
-    if (perWeek !== null) {
-      var rateStr = Math.abs(perWeek).toFixed(digits).replace('.', ',');
-      if (Math.abs(perWeek) < threshold) {
-        html += '<br>' + i18nGet('live.trendFlat');
-      } else if (perWeek > 0) {
-        html += '<br>' + i18nGet('live.trendRising').replace('{rate}', rateStr).replace('mm', unit);
-      } else {
-        html += '<br>' + i18nGet('live.trendFalling').replace('{rate}', '-' + rateStr).replace('mm', unit);
-      }
-    } else {
-      html += '<br><span class="trend-note">' + i18nGet('live.trendInsufficient') + '</span>';
-    }
+    html += '<br>' + trendSentence(perWeek, unit, digits);
     html += ' <button type="button" class="clear-selection-btn" data-chart="' + key + '">' + i18nGet('live.clearSelection') + '</button>';
     el.innerHTML = html;
     var btn = el.querySelector('.clear-selection-btn');
