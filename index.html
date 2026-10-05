@@ -1237,6 +1237,9 @@ Position actuelle : 34.50 mm</div>
       btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
     });
     try { localStorage.setItem('cm_lang', lang); } catch (e) {}
+    // notify other modules (live charts, footers...) so they re-render their
+    // dynamic text in the newly selected language instead of keeping stale strings
+    try { window.dispatchEvent(new CustomEvent('cm:langchange', { detail: lang })); } catch (e) {}
     updateDemo();
   }
 
@@ -1890,6 +1893,18 @@ Position actuelle : 34.50 mm</div>
     renderTrendReadout(key, filtered);
   }
 
+  // remember the raw last reading per chart so localized footers can be
+  // rebuilt instantly on language change without refetching from the API
+  var liveMeta = { position: null, relposition: null, battery: null };
+
+  function formatLiveDate(d) {
+    try {
+      return d.toLocaleString(document.documentElement.lang || 'fr');
+    } catch (e) {
+      return d.toLocaleString();
+    }
+  }
+
   function refreshOne(key, sensorId, canvas, valueElId, footElId) {
     var valueEl = document.getElementById(valueElId);
     var footEl = document.getElementById(footElId);
@@ -1903,18 +1918,56 @@ Position actuelle : 34.50 mm</div>
         : (rootStyle.getPropertyValue('--accent-2') || '#3B6E7A').trim();
     return fetchSeries(sensorId).then(function(points) {
       if (!points.length) {
+        liveMeta[key] = { state: 'nodata' };
         footEl.textContent = t().noData;
         return;
       }
       entry.points = points;
       var last = points[points.length - 1];
+      liveMeta[key] = { state: 'ok', y: last.y, x: last.x, unit: unit };
       valueEl.textContent = last.y.toFixed(2).replace('.', ',') + ' ' + unit;
-      footEl.textContent = t().updated + last.x.toLocaleString();
+      footEl.textContent = t().updated + formatLiveDate(last.x);
       renderEntry(key, canvas);
     }).catch(function() {
+      liveMeta[key] = { state: 'error' };
       footEl.textContent = t().error;
     });
   }
+
+  // re-render all dynamic texts (footer "last reading" lines + trend readouts)
+  // in the current language right after a FR/EN/DE switch
+  window.addEventListener('cm:langchange', function() {
+    ['position', 'relposition', 'battery'].forEach(function(key) {
+      var meta = liveMeta[key];
+      if (!meta) return;
+      var footElId = key === 'position' ? 'chartFootPosition'
+        : key === 'battery' ? 'chartFootBattery' : 'chartFootRelPosition';
+      var footEl = document.getElementById(footElId);
+      if (!footEl) return;
+      if (meta.state === 'nodata') {
+        footEl.textContent = t().noData;
+      } else if (meta.state === 'error') {
+        footEl.textContent = t().error;
+      } else {
+        footEl.textContent = t().updated + formatLiveDate(meta.x);
+      }
+      // rebuild the trend sentence / selection readout in the new language
+      var entry = store[key];
+      if (entry.chart && entry.chart._selRange) {
+        var sel = entry.chart._selRange;
+        var pts = filterByRange(entry.points, entry.range).filter(function(p) {
+          return p.x >= sel.from && p.x <= sel.to;
+        });
+        if (pts.length >= 2) {
+          renderSelectionReadout(footEl, key, {
+            from: sel.from, to: sel.to, count: pts.length, reg: linearRegression(pts)
+          });
+          return;
+        }
+      }
+      renderTrendReadout(key, filterByRange(entry.points, entry.range));
+    });
+  });
 
   function canvasForKey(key) {
     return key === 'position' ? posCanvas : (key === 'battery' ? battCanvas : relCanvas);
