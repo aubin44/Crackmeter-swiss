@@ -1658,11 +1658,12 @@ Position actuelle : 34.50 mm</div>
             time: {
               tooltipFormat: 'dd.MM.yyyy HH:mm',
               displayFormats: {
-                millisecond: 'HH:mm:ss', second: 'HH:mm:ss', minute: 'HH:mm',
-                hour: 'HH:mm', day: 'dd.MM.', week: 'dd.MM.', month: 'MMM yy'
+                millisecond: 'HH:mm:ss.SSS', second: 'HH:mm:ss', minute: 'HH:mm',
+                hour: 'dd.MM. HH:mm', day: 'dd.MM.yyyy', week: 'dd.MM.yyyy',
+                month: 'MM.yyyy', quarter: 'QQ yyyy', year: 'yyyy'
               }
             },
-            ticks: { color: colors.ink, maxTicksLimit: 6, source: 'auto', font: { family: 'IBM Plex Mono', size: 10 } },
+            ticks: { color: colors.ink, maxTicksLimit: 8, source: 'timestamp', font: { family: 'IBM Plex Mono', size: 10 } },
             grid: { display: false }
           },
           y: { ticks: { color: colors.ink, font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: colors.grid } }
