@@ -1472,29 +1472,46 @@ Position actuelle : 34.50 mm</div>
 
   // ---- time-proportional smoothing ------------------------------------
   // window is a TIME span (ms), not a number of points: points that happen
-  // to be closer together do not make the curve "denser" or steeper locally
+  // to be closer together do not make the curve "denser" or steeper locally.
+  // Two passes of a centered moving average (= triangular kernel) give a
+  // much smoother curve that follows the real signal without tracking noise.
   function smoothTrendValuesTime(points, windowMs) {
     if (points.length < 3) return null;
     var half = windowMs / 2;
-    var out = new Array(points.length);
-    for (var i = 0; i < points.length; i++) {
-      var ti = points[i].x.getTime();
-      var lo = ti - half, hi = ti + half;
-      var jFrom = i, jTo = i, sum = 0, count = 0;
+    var n = points.length;
+    var tmp = new Array(n);
+    var out = new Array(n);
+    var i, lo, hi, jFrom, jTo, sum, count, ti;
+    // pass 1
+    for (i = 0; i < n; i++) {
+      ti = points[i].x.getTime();
+      lo = ti - half; hi = ti + half;
+      jFrom = i; jTo = i; sum = 0; count = 0;
       while (jFrom > 0 && points[jFrom - 1].x.getTime() >= lo) jFrom--;
-      while (jTo < points.length - 1 && points[jTo + 1].x.getTime() <= hi) jTo++;
+      while (jTo < n - 1 && points[jTo + 1].x.getTime() <= hi) jTo++;
       for (var j = jFrom; j <= jTo; j++) { sum += points[j].y; count++; }
+      tmp[i] = sum / count;
+    }
+    // pass 2 (smooths the already-smoothed series again -> wider, softer kernel)
+    for (i = 0; i < n; i++) {
+      ti = points[i].x.getTime();
+      lo = ti - half; hi = ti + half;
+      jFrom = i; jTo = i; sum = 0; count = 0;
+      while (jFrom > 0 && points[jFrom - 1].x.getTime() >= lo) jFrom--;
+      while (jTo < n - 1 && points[jTo + 1].x.getTime() <= hi) jTo++;
+      for (var k = jFrom; k <= jTo; k++) { sum += tmp[k]; count++; }
       out[i] = { x: points[i].x, y: sum / count };
     }
     return out;
   }
 
-  // choose a smoothing window so the trend has ~12 gentle undulations over
-  // the visible time span regardless of how many points there are
+  // choose a smoothing window so the trend keeps only broad, low-frequency
+  // movements (few undulations over the visible time span) regardless of
+  // how many points there are
   function pickWindowMs(points) {
     var t0 = points[0].x.getTime(), t1 = points[points.length - 1].x.getTime();
     var span = Math.max(t1 - t0, 1);
-    return Math.max(span / 12, 60 * 60 * 1000); // at least 1h
+    return Math.max(span / 5, 4 * 60 * 60 * 1000); // at least 4h
   }
 
   // ---- time-based x scale helpers -------------------------------------
