@@ -549,6 +549,30 @@ Position actuelle : 34.50 mm</div>
         <div class="trend-readout mono" id="trendRelPosition"></div>
         <div class="chart-hint" data-i18n="live.zoomHint">Molette pour zoomer &middot; glisser pour déplacer</div>
       </div>
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title" data-i18n="live.batteryTitle">Tension batterie</div>
+            <div class="chart-sub" data-i18n="live.since">Depuis le 29.09.2026, 10h00</div>
+          </div>
+          <div class="chart-value mono" id="liveValueBattery">—</div>
+        </div>
+        <div class="chart-toolbar">
+          <div class="range-group" data-chart="battery">
+            <button type="button" class="range-btn" data-range="24h">24h</button>
+            <button type="button" class="range-btn" data-range="7d">7j</button>
+            <button type="button" class="range-btn active" data-range="all">Tout</button>
+          </div>
+          <div class="toolbar-right">
+            <button type="button" class="trend-btn active" data-chart="battery" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="reset-zoom-btn" data-chart="battery" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartBattery"></canvas></div>
+        <div class="chart-foot" id="chartFootBattery" data-i18n="live.loading">Chargement des données…</div>
+        <div class="trend-readout mono" id="trendBattery"></div>
+        <div class="chart-hint" data-i18n="live.zoomHint">Molette pour zoomer &middot; glisser pour déplacer</div>
+      </div>
     </div>
   </div>
 </section>
@@ -793,6 +817,7 @@ Position actuelle : 34.50 mm</div>
       "data.dtRelPosition": "Position relative",
       "live.positionTitle": "Position",
       "live.relPositionTitle": "Position relative",
+      "live.batteryTitle": "Tension batterie",
       "live.since": "Depuis le 29.09.2026, 10h00",
       "live.loading": "Chargement des données…",
       "live.resetZoom": "Réinitialiser le zoom",
@@ -923,6 +948,7 @@ Position actuelle : 34.50 mm</div>
       "data.dtRelPosition": "Relative position",
       "live.positionTitle": "Position",
       "live.relPositionTitle": "Relative position",
+      "live.batteryTitle": "Battery voltage",
       "live.since": "Since Sep 29, 2026, 10:00",
       "live.loading": "Loading data…",
       "live.resetZoom": "Reset zoom",
@@ -1053,6 +1079,7 @@ Position actuelle : 34.50 mm</div>
       "data.dtRelPosition": "Relative Position",
       "live.positionTitle": "Position",
       "live.relPositionTitle": "Relative Position",
+      "live.batteryTitle": "Batteriespannung",
       "live.since": "Seit dem 29.09.2026, 10:00 Uhr",
       "live.loading": "Daten werden geladen…",
       "live.resetZoom": "Zoom zurücksetzen",
@@ -1308,12 +1335,14 @@ Position actuelle : 34.50 mm</div>
   var BOX_ID = "6a7edd0df28f8a0007ce2172";
   var SENSOR_POSITION = "6a7edd0df28f8a0007ce2173";
   var SENSOR_POSITION_REL = "6a8ebacc852a4900078abdfd";
+  var SENSOR_BATTERY = "6a7edd0df28f8a0007ce2174";
   var START_DATE = new Date("2026-09-29T10:00:00");
   var POLL_INTERVAL = 12 * 60 * 60 * 1000; // 12h
 
   var posCanvas = document.getElementById('chartPosition');
   var relCanvas = document.getElementById('chartRelPosition');
-  if (!posCanvas || !relCanvas || typeof Chart === 'undefined') return;
+  var battCanvas = document.getElementById('chartBattery');
+  if (!posCanvas || !relCanvas || !battCanvas || typeof Chart === 'undefined') return;
 
   var LIVE_TXT = {
     fr: { updated: 'Dernière mesure : ', noData: 'Aucune donnée pour cette période pour le moment.', error: 'Données en direct indisponibles pour le moment.' },
@@ -1328,7 +1357,8 @@ Position actuelle : 34.50 mm</div>
   // full fetched datasets, kept in memory so range buttons can filter without refetching
   var store = {
     position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true },
-    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true }
+    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true },
+    battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true }
   };
 
   function downsample(arr, maxPoints) {
@@ -1392,18 +1422,28 @@ Position actuelle : 34.50 mm</div>
     };
   }
 
-  function trendValues(sampled, reg) {
-    if (!reg) return null;
-    return sampled.map(function(p) {
-      return reg.intercept + reg.slope * (p.x.getTime() - reg.x0);
-    });
+
+  // moving-average smoothing: returns a gently undulating curve that follows
+  // the local tendency of the data instead of a straight regression line
+  function smoothTrendValues(points, windowSize) {
+    if (points.length < 3) return null;
+    var half = Math.max(1, Math.floor(windowSize / 2));
+    var out = new Array(points.length);
+    for (var i = 0; i < points.length; i++) {
+      var from = Math.max(0, i - half);
+      var to = Math.min(points.length - 1, i + half);
+      var sum = 0;
+      for (var j = from; j <= to; j++) sum += points[j].y;
+      out[i] = sum / (to - from + 1);
+    }
+    return out;
   }
 
-  function buildChart(canvas, points, color, showTrend) {
+  function buildChart(canvas, points, color, showTrend, unit) {
+    unit = unit || 'mm';
     var sampled = downsample(points, 300);
     var colors = getColors();
-    var reg = linearRegression(points);
-    var trend = showTrend ? trendValues(sampled, reg) : null;
+    var trend = showTrend ? smoothTrendValues(sampled, Math.max(5, Math.ceil(sampled.length / 12))) : null;
     var datasets = [{
       data: sampled.map(function(p) { return p.y; }),
       borderColor: color,
@@ -1411,7 +1451,8 @@ Position actuelle : 34.50 mm</div>
       borderWidth: 1.75,
       pointRadius: 0,
       pointHoverRadius: 3,
-      tension: 0.15,
+      tension: 0.4,
+      cubicInterpolationMode: 'monotone',
       spanGaps: true,
       order: 1
     }];
@@ -1424,7 +1465,7 @@ Position actuelle : 34.50 mm</div>
         borderDash: [5, 4],
         pointRadius: 0,
         pointHitRadius: 0,
-        tension: 0,
+        tension: 0.5,
         spanGaps: true,
         order: 0
       });
@@ -1445,7 +1486,7 @@ Position actuelle : 34.50 mm</div>
           tooltip: {
             filter: function(ctx) { return ctx.datasetIndex === 0; },
             callbacks: {
-              label: function(ctx) { return ctx.parsed.y.toFixed(2).replace('.', ',') + ' mm'; }
+              label: function(ctx) { return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit; }
             }
           },
           zoom: {
@@ -1466,13 +1507,18 @@ Position actuelle : 34.50 mm</div>
     });
   }
 
-  function updateChart(chart, points, color, showTrend) {
+  function updateChart(chart, points, color, showTrend, unit) {
+    unit = unit || 'mm';
     var sampled = downsample(points, 300);
-    var reg = linearRegression(points);
-    var trend = showTrend ? trendValues(sampled, reg) : null;
+    var trend = showTrend ? smoothTrendValues(sampled, Math.max(5, Math.ceil(sampled.length / 12))) : null;
     var colors = getColors();
     chart.data.labels = sampled.map(function(p) { return formatLabel(p.x); });
     chart.data.datasets[0].data = sampled.map(function(p) { return p.y; });
+    if (chart.options.plugins.tooltip.callbacks.label) {
+      chart.options.plugins.tooltip.callbacks.label = function(ctx) {
+        return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
+      };
+    }
     if (trend) {
       if (chart.data.datasets.length > 1) {
         chart.data.datasets[1].data = trend;
@@ -1480,7 +1526,7 @@ Position actuelle : 34.50 mm</div>
         chart.data.datasets.push({
           data: trend, borderColor: colors.ink, backgroundColor: 'transparent',
           borderWidth: 1.25, borderDash: [5, 4], pointRadius: 0, pointHitRadius: 0,
-          tension: 0, spanGaps: true, order: 0
+          tension: 0.5, spanGaps: true, order: 0
         });
       }
     } else if (chart.data.datasets.length > 1) {
@@ -1497,7 +1543,7 @@ Position actuelle : 34.50 mm</div>
   }
 
   function renderTrendReadout(key, points) {
-    var el = document.getElementById(key === 'position' ? 'trendPosition' : 'trendRelPosition');
+    var el = document.getElementById(key === 'position' ? 'trendPosition' : (key === 'battery' ? 'trendBattery' : 'trendRelPosition'));
     if (!el) return;
     var entry = store[key];
     if (!entry.showTrend) { el.innerHTML = ''; return; }
@@ -1507,14 +1553,17 @@ Position actuelle : 34.50 mm</div>
     }
     var reg = linearRegression(points);
     var perWeek = formatTrendRate(reg);
-    var rateStr = Math.abs(perWeek).toFixed(3).replace('.', ',');
+    var unit = key === 'battery' ? 'V' : 'mm';
+    var threshold = key === 'battery' ? 0.0005 : 0.001;
+    var digits = key === 'battery' ? 4 : 3;
+    var rateStr = Math.abs(perWeek).toFixed(digits).replace('.', ',');
     var main;
-    if (Math.abs(perWeek) < 0.001) {
+    if (Math.abs(perWeek) < threshold) {
       main = i18nGet('live.trendFlat');
     } else if (perWeek > 0) {
-      main = i18nGet('live.trendRising').replace('{rate}', rateStr);
+      main = i18nGet('live.trendRising').replace('{rate}', rateStr).replace('mm', unit);
     } else {
-      main = i18nGet('live.trendFalling').replace('{rate}', '-' + rateStr);
+      main = i18nGet('live.trendFalling').replace('{rate}', '-' + rateStr).replace('mm', unit);
     }
     el.innerHTML = main + ' &mdash; <span class="trend-note">' + i18nGet('live.trendNote') + '</span>';
   }
@@ -1532,11 +1581,12 @@ Position actuelle : 34.50 mm</div>
 
   function renderEntry(key, canvas) {
     var entry = store[key];
+    var unit = key === 'battery' ? 'V' : 'mm';
     var filtered = filterByRange(entry.points, entry.range);
     if (!entry.chart) {
-      entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend);
+      entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit);
     } else {
-      updateChart(entry.chart, filtered, entry.color, entry.showTrend);
+      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit);
     }
     renderTrendReadout(key, filtered);
   }
@@ -1545,10 +1595,13 @@ Position actuelle : 34.50 mm</div>
     var valueEl = document.getElementById(valueElId);
     var footEl = document.getElementById(footElId);
     var entry = store[key];
+    var unit = key === 'battery' ? 'V' : 'mm';
     var rootStyle = getComputedStyle(document.documentElement);
     entry.color = key === 'position'
       ? (rootStyle.getPropertyValue('--accent') || '#C1601B').trim()
-      : (rootStyle.getPropertyValue('--accent-2') || '#3B6E7A').trim();
+      : key === 'battery'
+        ? (rootStyle.getPropertyValue('--accent-3') || '#5A7D5A').trim()
+        : (rootStyle.getPropertyValue('--accent-2') || '#3B6E7A').trim();
     return fetchSeries(sensorId).then(function(points) {
       if (!points.length) {
         footEl.textContent = t().noData;
@@ -1556,7 +1609,7 @@ Position actuelle : 34.50 mm</div>
       }
       entry.points = points;
       var last = points[points.length - 1];
-      valueEl.textContent = last.y.toFixed(2).replace('.', ',') + ' mm';
+      valueEl.textContent = last.y.toFixed(2).replace('.', ',') + ' ' + unit;
       footEl.textContent = t().updated + last.x.toLocaleString();
       renderEntry(key, canvas);
     }).catch(function() {
@@ -1564,9 +1617,14 @@ Position actuelle : 34.50 mm</div>
     });
   }
 
+  function canvasForKey(key) {
+    return key === 'position' ? posCanvas : (key === 'battery' ? battCanvas : relCanvas);
+  }
+
   function refreshAll() {
     refreshOne('position', SENSOR_POSITION, posCanvas, 'liveValuePosition', 'chartFootPosition');
     refreshOne('relposition', SENSOR_POSITION_REL, relCanvas, 'liveValueRelPosition', 'chartFootRelPosition');
+    refreshOne('battery', SENSOR_BATTERY, battCanvas, 'liveValueBattery', 'chartFootBattery');
   }
 
   // range-button wiring
@@ -1577,8 +1635,7 @@ Position actuelle : 34.50 mm</div>
         group.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
         store[key].range = btn.getAttribute('data-range');
-        var canvas = key === 'position' ? posCanvas : relCanvas;
-        renderEntry(key, canvas);
+        renderEntry(key, canvasForKey(key));
       });
     });
   });
@@ -1598,8 +1655,7 @@ Position actuelle : 34.50 mm</div>
       var key = btn.getAttribute('data-chart');
       store[key].showTrend = !store[key].showTrend;
       btn.classList.toggle('active', store[key].showTrend);
-      var canvas = key === 'position' ? posCanvas : relCanvas;
-      renderEntry(key, canvas);
+      renderEntry(key, canvasForKey(key));
     });
   });
 
