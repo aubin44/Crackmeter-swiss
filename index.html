@@ -273,6 +273,13 @@
   .trend-btn::before { content: ''; width: 9px; height: 2px; background: var(--stone); display: inline-block; }
   .trend-btn.active { color: var(--ink); border-color: var(--ink); }
   .trend-btn.active::before { background: var(--accent); }
+  .download-btn {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 0.75rem; font-weight: 500;
+    background: transparent; color: var(--stone); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 4px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .download-btn:hover { color: var(--ink); border-color: var(--ink); }
+  .download-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   .trend-readout { margin-top: 6px; font-size: 0.82rem; color: var(--ink); }
   .trend-readout .trend-note { color: var(--stone); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.78rem; }
   .sel-badge {
@@ -556,6 +563,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="position" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="download-btn" data-chart="position" title="Excel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="position" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
@@ -580,6 +588,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="relposition" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="download-btn" data-chart="relposition" title="Excel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="relposition" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
@@ -604,6 +613,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="battery" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="download-btn" data-chart="battery" title="Excel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="battery" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
@@ -861,6 +871,7 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Réinitialiser le zoom",
       "live.zoomHint": "Glisser : sélectionner une zone (zoom + tendance) &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom &middot; pincer : zoom",
       "live.trendToggle": "Tendance",
+      "live.download": "Excel",
       "live.trendRising": "Tendance : +{rate} {unit}/semaine",
       "live.trendFalling": "Tendance : {rate} {unit}/semaine",
       "live.trendFlat": "Tendance : stable",
@@ -993,6 +1004,7 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Reset zoom",
       "live.zoomHint": "Drag: select a zone (zoom + trend) &middot; Shift + drag: pan &middot; Ctrl + scroll: zoom &middot; pinch: zoom",
       "live.trendToggle": "Trend",
+      "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/week",
       "live.trendFalling": "Trend: {rate} {unit}/week",
       "live.trendFlat": "Trend: stable",
@@ -1125,6 +1137,7 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Zoom zurücksetzen",
       "live.zoomHint": "Ziehen: Zone auswählen (Zoom + Trend) &middot; Umschalt + Ziehen: Verschieben &middot; Strg + Mausrad: Zoom &middot; Pinch: Zoom",
       "live.trendToggle": "Trend",
+      "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/Woche",
       "live.trendFalling": "Trend: {rate} {unit}/Woche",
       "live.trendFlat": "Trend: stabil",
@@ -1895,6 +1908,81 @@ Position actuelle : 34.50 mm</div>
       store[key].showTrend = !store[key].showTrend;
       btn.classList.toggle('active', store[key].showTrend);
       renderEntry(key, canvasForKey(key), true);
+    });
+  });
+
+  // ---- Excel (.xls) export -------------------------------------------------
+  // One button per chart: downloads a SpreadsheetML workbook with exactly two
+  // columns — Date-Time and the measured value (mm or V depending on sensor).
+  var EXPORT_LABELS = {
+    fr: { date: 'Date-Heure', value: 'Valeur mesuree' },
+    en: { date: 'Date-Time', value: 'Measured value' },
+    de: { date: 'Datum-Zeit', value: 'Messwert' }
+  };
+  var EXPORT_TITLES = { position: 'position', relposition: 'position-relative', battery: 'tension-batterie' };
+
+  function xmlEscape(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+  function pad4(n) { return String(n).padStart(4, '0'); }
+  function isoDateTime(d) {
+    return pad4(d.getFullYear()) + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  function buildSpreadsheetXml(points, labels) {
+    var rows = '<ss:Row>' +
+      '<ss:Cell ss:StyleID="hdr"><ss:Data ss:Type="String">' + xmlEscape(labels.date) + '</ss:Data></ss:Cell>' +
+      '<ss:Cell ss:StyleID="hdr"><ss:Data ss:Type="String">' + xmlEscape(labels.value) + '</ss:Data></ss:Cell>' +
+      '</ss:Row>';
+    for (var i = 0; i < points.length; i++) {
+      rows += '<ss:Row>' +
+        '<ss:Cell><ss:Data ss:Type="DateTime">' + isoDateTime(points[i].x) + '</ss:Data></ss:Cell>' +
+        '<ss:Cell><ss:Data ss:Type="Number">' + points[i].y + '</ss:Data></ss:Cell>' +
+        '</ss:Row>';
+    }
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<?mso-application progid="Excel.Sheet"?>\n' +
+      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' +
+      ' xmlns:o="urn:schemas-microsoft-com:office:office"' +
+      ' xmlns:x="urn:schemas-microsoft-com:office:excel"' +
+      ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n' +
+      '<Styles>' +
+      '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Bottom"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>' +
+      '<Style ss:ID="hdr"><Font ss:Bold="1"/></Style>' +
+      '</Styles>\n' +
+      '<Worksheet ss:Name="Donnees">' +
+      '<Table>' +
+      '<Column ss:Width="130"/><Column ss:Width="110"/>' +
+      rows +
+      '</Table>' +
+      '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions>' +
+      '</Worksheet></Workbook>';
+  }
+
+  function downloadXls(key) {
+    var entry = store[key];
+    if (!entry || !entry.points.length) return;
+    var lang = document.documentElement.lang || 'fr';
+    var labels = EXPORT_LABELS[lang] || EXPORT_LABELS.fr;
+    var xml = buildSpreadsheetXml(entry.points, labels);
+    var blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = new Date();
+    a.href = url;
+    a.download = 'crackmeter-' + EXPORT_TITLES[key] + '-' +
+      pad4(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate()) + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+  }
+
+  document.querySelectorAll('.download-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      downloadXls(btn.getAttribute('data-chart'));
     });
   });
 
