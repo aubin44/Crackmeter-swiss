@@ -563,7 +563,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="position" data-i18n="live.trendToggle">Tendance</button>
-            <button type="button" class="download-btn" data-chart="position" title="Excel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
+            <button type="button" class="download-btn" data-chart="position" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="position" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
@@ -588,7 +588,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="relposition" data-i18n="live.trendToggle">Tendance</button>
-            <button type="button" class="download-btn" data-chart="relposition" title="Excel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
+            <button type="button" class="download-btn" data-chart="relposition" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="relposition" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
@@ -613,7 +613,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="battery" data-i18n="live.trendToggle">Tendance</button>
-            <button type="button" class="download-btn" data-chart="battery" title="Excel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
+            <button type="button" class="download-btn" data-chart="battery" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="battery" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
         </div>
@@ -1911,9 +1911,10 @@ Position actuelle : 34.50 mm</div>
     });
   });
 
-  // ---- Excel (.xls) export -------------------------------------------------
-  // One button per chart: downloads a SpreadsheetML workbook with exactly two
-  // columns — Date-Time and the measured value (mm or V depending on sensor).
+  // ---- Excel (.xlsx) export ------------------------------------------------
+  // One button per chart: downloads a real OOXML .xlsx workbook (ZIP store +
+  // XML parts, deflate not required by Excel/LibreOffice/Sheets) with exactly
+  // two columns — Date-Time and the measured value (mm or V depending on sensor).
   var EXPORT_LABELS = {
     fr: { date: 'Date-Heure', value: 'Valeur mesuree' },
     en: { date: 'Date-Time', value: 'Measured value' },
@@ -1926,54 +1927,156 @@ Position actuelle : 34.50 mm</div>
                     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
   }
   function pad4(n) { return String(n).padStart(4, '0'); }
-  function isoDateTime(d) {
-    return pad4(d.getFullYear()) + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
-      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-  }
 
-  function buildSpreadsheetXml(points, labels) {
-    var rows = '<ss:Row>' +
-      '<ss:Cell ss:StyleID="hdr"><ss:Data ss:Type="String">' + xmlEscape(labels.date) + '</ss:Data></ss:Cell>' +
-      '<ss:Cell ss:StyleID="hdr"><ss:Data ss:Type="String">' + xmlEscape(labels.value) + '</ss:Data></ss:Cell>' +
-      '</ss:Row>';
-    for (var i = 0; i < points.length; i++) {
-      rows += '<ss:Row>' +
-        '<ss:Cell><ss:Data ss:Type="DateTime">' + isoDateTime(points[i].x) + '</ss:Data></ss:Cell>' +
-        '<ss:Cell><ss:Data ss:Type="Number">' + points[i].y + '</ss:Data></ss:Cell>' +
-        '</ss:Row>';
+  // --- minimal ZIP writer (STORE method, CRC32) -----------------------------
+  var CRC_TABLE = (function() {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
     }
-    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<?mso-application progid="Excel.Sheet"?>\n' +
-      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' +
-      ' xmlns:o="urn:schemas-microsoft-com:office:office"' +
-      ' xmlns:x="urn:schemas-microsoft-com:office:excel"' +
-      ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n' +
-      '<Styles>' +
-      '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Bottom"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>' +
-      '<Style ss:ID="hdr"><Font ss:Bold="1"/></Style>' +
-      '</Styles>\n' +
-      '<Worksheet ss:Name="Donnees">' +
-      '<Table>' +
-      '<Column ss:Width="130"/><Column ss:Width="110"/>' +
-      rows +
-      '</Table>' +
-      '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions>' +
-      '</Worksheet></Workbook>';
+    return t;
+  })();
+  function crc32(bytes) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function dosDateTime(d) {
+    return {
+      time: ((d.getHours() << 11) | (d.getMinutes() << 5) | (Math.floor(d.getSeconds() / 2))) & 0xFFFF,
+      date: (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF
+    };
+  }
+  function buildZip(entries) {
+    var enc = new TextEncoder();
+    var parts = [], central = [], offset = 0, now = dosDateTime(new Date());
+    for (var i = 0; i < entries.length; i++) {
+      var nameBytes = enc.encode(entries[i].name);
+      var dataBytes = enc.encode(entries[i].data);
+      var crc = crc32(dataBytes);
+      var lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0, true);
+      lh.setUint16(8, 0, true); lh.setUint16(10, now.time, true); lh.setUint16(12, now.date, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, dataBytes.length, true);
+      lh.setUint32(22, dataBytes.length, true); lh.setUint16(26, nameBytes.length, true);
+      lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), nameBytes, dataBytes);
+      var ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0, true); ch.setUint16(10, 0, true);
+      ch.setUint16(12, now.time, true); ch.setUint16(14, now.date, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, dataBytes.length, true);
+      ch.setUint32(24, dataBytes.length, true); ch.setUint16(28, nameBytes.length, true);
+      ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true);
+      ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), nameBytes);
+      offset += 30 + nameBytes.length + dataBytes.length;
+    }
+    var centralSize = 0;
+    for (var j = 0; j < central.length; j++) centralSize += central[j].length;
+    var eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(8, entries.length, true);
+    eocd.setUint16(10, entries.length, true); eocd.setUint32(12, centralSize, true);
+    eocd.setUint32(16, offset, true);
+    return new Blob([].concat(parts, central, [new Uint8Array(eocd.buffer)]),
+      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
-  function downloadXls(key) {
+  // Excel serial date: days since the 1899-12-30 epoch (UTC math avoids DST drift)
+  function excelSerial(d) {
+    return (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(),
+                     d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds())
+            / 86400000) + 25569;
+  }
+
+  function buildXlsxParts(points, labels) {
+    var ST_HDR = 1, ST_DT = 2; // cellXfs style indexes (bold header, datetime format)
+    var sharedStrings = [labels.date, labels.value];
+    var rows = '<row r="1"><c r="A1" s="' + ST_HDR + '" t="s"><v>0</v></c>' +
+               '<c r="B1" s="' + ST_HDR + '" t="s"><v>1</v></c></row>';
+    for (var i = 0; i < points.length; i++) {
+      var r = i + 2;
+      rows += '<row r="' + r + '">' +
+        '<c r="A' + r + '" s="' + ST_DT + '"><v>' + excelSerial(points[i].x) + '</v></c>' +
+        '<c r="B' + r + '"><v>' + points[i].y + '</v></c></row>';
+    }
+    var lastRow = points.length + 1;
+    var sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<dimension ref="A1:B' + lastRow + '"/>' +
+      '<sheetViews><sheetView workbookViewId="0">' +
+      '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
+      '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>' +
+      '<cols><col min="1" max="1" width="20" customWidth="1"/><col min="2" max="2" width="16" customWidth="1"/></cols>' +
+      '<sheetData>' + rows + '</sheetData></worksheet>';
+    var stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="1"><numFmt numFmtId="165" formatCode="yyyy\\-mm\\-dd\\ hh:mm:ss"/></numFmts>' +
+      '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>' +
+      '<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+      '<fills count="2"><fill><patternFill patternType="none"/></fill>' +
+      '<fill><patternFill patternType="gray125"/></fill></fills>' +
+      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="3">' +
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+      '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+      '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+      '</cellXfs>' +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    var sstXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' +
+      sharedStrings.length + '" uniqueCount="' + sharedStrings.length + '">' +
+      sharedStrings.map(function(s) { return '<si><t>' + xmlEscape(s) + '</t></si>'; }).join('') +
+      '</sst>';
+    var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' +
+      '</Types>';
+    var relsRoot = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '</Relationships>';
+    var wbXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<sheets><sheet name="Donnees" sheetId="1" r:id="rId1"/></sheets></workbook>';
+    var wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' +
+      '</Relationships>';
+    return [
+      { name: '[Content_Types].xml', data: contentTypes },
+      { name: '_rels/.rels', data: relsRoot },
+      { name: 'xl/workbook.xml', data: wbXml },
+      { name: 'xl/_rels/workbook.xml.rels', data: wbRels },
+      { name: 'xl/styles.xml', data: stylesXml },
+      { name: 'xl/sharedStrings.xml', data: sstXml },
+      { name: 'xl/worksheets/sheet1.xml', data: sheetXml }
+    ];
+  }
+
+  function downloadXlsx(key) {
     var entry = store[key];
     if (!entry || !entry.points.length) return;
     var lang = document.documentElement.lang || 'fr';
     var labels = EXPORT_LABELS[lang] || EXPORT_LABELS.fr;
-    var xml = buildSpreadsheetXml(entry.points, labels);
-    var blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var blob = buildZip(buildXlsxParts(entry.points, labels));
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     var d = new Date();
     a.href = url;
     a.download = 'crackmeter-' + EXPORT_TITLES[key] + '-' +
-      pad4(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate()) + '.xls';
+      pad4(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate()) + '.xlsx';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1982,7 +2085,7 @@ Position actuelle : 34.50 mm</div>
 
   document.querySelectorAll('.download-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      downloadXls(btn.getAttribute('data-chart'));
+      downloadXlsx(btn.getAttribute('data-chart'));
     });
   });
 
