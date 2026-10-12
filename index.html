@@ -273,6 +273,7 @@
     background: transparent; border: none; padding: 0; cursor: pointer; text-decoration: underline;
   }
   .reset-zoom-btn:hover { opacity: 0.8; }
+  .chart-hint { margin-top: 6px; font-size: 0.72rem; color: var(--stone); opacity: 0.75; }
   .toolbar-right { display: flex; align-items: center; gap: 14px; }
   .trend-btn {
     font-family: 'IBM Plex Sans', sans-serif; font-size: 0.75rem; font-weight: 500;
@@ -327,6 +328,7 @@
     .range-btn { padding: 7px 9px; font-size: 0.7rem; }
     .trend-btn { padding: 6px 10px; }
     .reset-zoom-btn { padding: 6px 4px; }
+    .chart-hint { font-size: 0.7rem; line-height: 1.45; }
     .live-charts { gap: 20px; margin-top: 26px; }
     .data-side dl { grid-template-columns: 1fr; row-gap: 2px; margin-bottom: 10px; }
     .data-side dd { text-align: left; margin-bottom: 8px; }
@@ -593,6 +595,7 @@ Position actuelle : 34.50 mm</div>
         <div class="chart-canvas-wrap"><canvas id="chartPosition" class="chart-canvas"></canvas></div>
         <div class="chart-foot" id="chartFootPosition" data-i18n="live.loading">Chargement des données…</div>
         <div class="trend-readout mono" id="trendPosition"></div>
+        <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
       </div>
       <div class="chart-card">
         <div class="chart-head">
@@ -618,6 +621,7 @@ Position actuelle : 34.50 mm</div>
         <div class="chart-canvas-wrap"><canvas id="chartBattery" class="chart-canvas"></canvas></div>
         <div class="chart-foot" id="chartFootBattery" data-i18n="live.loading">Chargement des données…</div>
         <div class="trend-readout mono" id="trendBattery"></div>
+        <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
       </div>
     </div>
   </div>
@@ -870,6 +874,7 @@ Position actuelle : 34.50 mm</div>
       "live.since": "Depuis le 29.09.2026, 12h49",
       "live.loading": "Chargement des données…",
       "live.resetZoom": "Réinitialiser le zoom",
+      "live.zoomHint": "Glisser : sélectionner une zone (zoom + tendance) &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom &middot; pincer : zoom",
       "live.trendToggle": "Tendance",
       "live.forecastToggle": "Prévision 10 j",
       "live.forecastDays": "j",
@@ -877,9 +882,6 @@ Position actuelle : 34.50 mm</div>
       "live.tempToggle": "Température",
       "live.tempSource": "Température horaire : station MeteoSuisse Fribourg/Grangeneuve (GRA) &mdash; données OGD, licence CC-BY.",
       "live.tempError": "Données de température indisponibles pour le moment.",
-      "live.tempTooltipPrefix": "Température",
-      "live.forecastTooltipPrefix": "Prévision",
-      "live.tempTooltipNoData": "Température : pas de donnée à cette date",
       "live.download": "Excel",
       "live.trendRising": "Tendance : +{rate} {unit}/semaine",
       "live.trendFalling": "Tendance : {rate} {unit}/semaine",
@@ -1015,6 +1017,7 @@ Position actuelle : 34.50 mm</div>
       "live.since": "Since Sep 29, 2026, 12:49",
       "live.loading": "Loading data…",
       "live.resetZoom": "Reset zoom",
+      "live.zoomHint": "Drag: select a zone (zoom + trend) &middot; Shift + drag: pan &middot; Ctrl + scroll: zoom &middot; pinch: zoom",
       "live.trendToggle": "Trend",
       "live.forecastToggle": "Forecast 10 d",
       "live.forecastDays": "d",
@@ -1022,9 +1025,6 @@ Position actuelle : 34.50 mm</div>
       "live.tempToggle": "Temperature",
       "live.tempSource": "Hourly temperature: MeteoSwiss station Fribourg/Grangeneuve (GRA) &mdash; OGD data, CC-BY license.",
       "live.tempError": "Temperature data unavailable at the moment.",
-      "live.tempTooltipPrefix": "Temperature",
-      "live.forecastTooltipPrefix": "Forecast",
-      "live.tempTooltipNoData": "Temperature: no data for this date",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/week",
       "live.trendFalling": "Trend: {rate} {unit}/week",
@@ -1160,6 +1160,7 @@ Position actuelle : 34.50 mm</div>
       "live.since": "Seit dem 29.09.2026, 12:49 Uhr",
       "live.loading": "Daten werden geladen…",
       "live.resetZoom": "Zoom zurücksetzen",
+      "live.zoomHint": "Ziehen: Zone auswählen (Zoom + Trend) &middot; Umschalt + Ziehen: Verschieben &middot; Strg + Mausrad: Zoom &middot; Pinch: Zoom",
       "live.trendToggle": "Trend",
       "live.forecastToggle": "Prognose 10 T",
       "live.forecastDays": "T.",
@@ -1167,9 +1168,6 @@ Position actuelle : 34.50 mm</div>
       "live.tempToggle": "Temperatur",
       "live.tempSource": "St&uuml;ndliche Temperatur: MeteoSchweiz-Station Freiburg/Grangeneuve (GRA) &mdash; OGD-Daten, Lizenz CC-BY.",
       "live.tempError": "Temperaturdaten derzeit nicht verf&uuml;gbar.",
-      "live.tempTooltipPrefix": "Temperatur",
-      "live.forecastTooltipPrefix": "Prognose",
-      "live.tempTooltipNoData": "Temperatur: keine Daten zu diesem Datum",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/Woche",
       "live.trendFalling": "Trend: {rate} {unit}/Woche",
@@ -1733,9 +1731,8 @@ Position actuelle : 34.50 mm</div>
           legend: { display: false },
           crackmeterSelection: { showBand: true },
           tooltip: {
-            // keep the previous interaction behaviour: the tooltip is driven
-            // by the main series / temperature points only (mode 'nearest').
-            // The forecast value is injected manually via `tooltipLabel`.
+            // show the main series and the temperature overlay in tooltips,
+            // but never the trend / forecast helper datasets
             filter: function(ctx) {
               var l = ctx.chart.data.datasets[ctx.datasetIndex] && ctx.chart.data.datasets[ctx.datasetIndex].label;
               return ctx.datasetIndex === 0 || l === 'temp';
@@ -1746,7 +1743,10 @@ Position actuelle : 34.50 mm</div>
                 var d = new Date(typeof items[0].parsed.x === 'number' ? items[0].parsed.x : items[0].raw.x);
                 return formatLabel(d);
               },
-              label: tooltipLabel
+              label: function(ctx) {
+                if (ctx.dataset.label === 'temp') return ctx.parsed.y.toFixed(1).replace('.', ',') + ' °C';
+                return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
+              }
             }
           },
           zoom: {
@@ -1807,7 +1807,6 @@ Position actuelle : 34.50 mm</div>
     });
     chart._lastFullSpan = bounds.max - bounds.min;
     chart._unit = unit;
-    chart._isPosition = (key === 'position');
     if (showForecast) {
       // remember the original data extent so "reset zoom" can restore it
       // even though the x axis was extended to fit the forecast curve
@@ -1819,7 +1818,6 @@ Position actuelle : 34.50 mm</div>
   function updateChart(chart, points, color, showTrend, unit, preserveScale, key, showForecast, tempData) {
     unit = unit || 'mm';
     chart._unit = unit;
-    if (key) chart._isPosition = (key === 'position');
     var series = points.map(function(p) { return { x: p.x, y: p.y }; });
     // smoothing is needed both for the visible trend line and as anchor of
     // the forecast curve; the dataset itself stays off when showTrend is false
@@ -1828,7 +1826,12 @@ Position actuelle : 34.50 mm</div>
     var colors = getColors();
     chart.data.datasets[0].data = series;
     chart.data.datasets[0].borderColor = color;
-    applyTooltipCallbacks(chart);
+    if (chart.options.plugins.tooltip.callbacks.label) {
+      chart.options.plugins.tooltip.callbacks.label = function(ctx) {
+        if (ctx.dataset.label === 'temp') return ctx.parsed.y.toFixed(1).replace('.', ',') + ' °C';
+        return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
+      };
+    }
     // temperature dataset management (removed here, re-inserted LAST at the
     // end of this function so it always sits after series/trend/forecast)
     for (var ti = chart.data.datasets.length - 1; ti >= 1; ti--) {
@@ -1983,72 +1986,6 @@ Position actuelle : 34.50 mm</div>
   function findKeyForChart(chart) {
     for (var k in store) { if (store[k].chart === chart) return k; }
     return null;
-  }
-
-  // ---- shared tooltip helpers --------------------------------------------
-  // main series / temperature values with localized prefixes. The forecast
-  // dataset is never part of the tooltip items (helper curve, pointHitRadius
-  // 0); when hovering beyond the last measurement we inject its projected
-  // value manually into the position chart tooltip instead.
-  function tooltipLabel(ctx) {
-    var lbl = ctx.dataset.label;
-    if (lbl === 'temp') return i18nGet('live.tempTooltipPrefix') + ' : ' + ctx.parsed.y.toFixed(1).replace('.', ',') + ' °C';
-    var ch = ctx.chart;
-    var out = [ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + (ch._unit || 'mm')];
-    if (ch._isPosition && store.position.showForecast) {
-      var fTs = typeof ctx.parsed.x === 'number' ? ctx.parsed.x : (ctx.raw && ctx.raw.x instanceof Date ? ctx.raw.x.getTime() : null);
-      if (fTs !== null) {
-        var fv = lookupForecastValue(ch, fTs);
-        if (fv !== null) {
-          out.push(i18nGet('live.forecastTooltipPrefix') + ' : ' + fv.toFixed(4).replace('.', ',') + ' ' + (ch._unit || 'mm'));
-        }
-      }
-    }
-    return out;
-  }
-  // linear interpolation of the forecast dataset at timestamp tsMs (null if
-  // outside the forecast range or dataset absent)
-  function lookupForecastValue(chart, tsMs) {
-    var fd = null;
-    for (var i = 0; i < chart.data.datasets.length; i++) {
-      if (chart.data.datasets[i].label === 'forecast') { fd = chart.data.datasets[i]; break; }
-    }
-    if (!fd || !fd.data || !fd.data.length) return null;
-    var dts = [];
-    for (var j = 0; j < fd.data.length; j++) {
-      var p = fd.data[j];
-      var t = p.x instanceof Date ? p.x.getTime() : p.x;
-      if (typeof t === 'number' && isFinite(t)) dts.push({ t: t, y: p.y });
-    }
-    if (!dts.length) return null;
-    if (tsMs < dts[0].t || tsMs > dts[dts.length - 1].t) return null;
-    for (var k = 1; k < dts.length; k++) {
-      if (dts[k].t >= tsMs) {
-        var a = dts[k - 1], b = dts[k];
-        if (b.t === a.t) return b.y;
-        return a.y + (b.y - a.y) * (tsMs - a.t) / (b.t - a.t);
-      }
-    }
-    return dts[dts.length - 1].y;
-  }
-  function afterBodyHook(items) {
-    if (!items || !items.length) return [];
-    var hasT = false;
-    for (var i = 0; i < items.length; i++) {
-      if (items[i].dataset.label === 'temp') hasT = true;
-    }
-    var out = [];
-    // only mention missing temperature when the overlay is actually ON but
-    // there is no GRA data at this date (e.g. before Jan 2026)
-    var key = findKeyForChart(items[0].chart);
-    if (!hasT && key && store[key] && store[key].showTemp) out.push(i18nGet('live.tempTooltipNoData'));
-    return out;
-  }
-  function applyTooltipCallbacks(chart) {
-    var tt = chart.options.plugins.tooltip;
-    tt.callbacks = tt.callbacks || {};
-    tt.callbacks.label = tooltipLabel;
-    tt.callbacks.afterBody = afterBodyHook;
   }
 
   function renderSelectionReadout(el, key, sel) {
