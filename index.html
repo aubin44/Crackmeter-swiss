@@ -236,14 +236,24 @@
   .qr-row .qr-text { font-size: 0.88rem; }
   .qr-row a { color: var(--accent-2); text-decoration: underline; word-break: break-word; }
 
-  .live-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 40px; }
-  @media (max-width: 780px) { .live-charts { grid-template-columns: 1fr; } }
+  /* single column: every chart stretches across the full page width */
+  .live-charts { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 40px; }
   .chart-card { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 22px 24px; }
+  .mode-group { display: flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .mode-btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500;
+    background: transparent; color: var(--stone); border: none; border-right: 1px solid var(--line);
+    padding: 5px 10px; cursor: pointer; white-space: nowrap;
+  }
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.active { background: var(--accent-2); color: #fff; }
+  :root[data-theme="dark"] .mode-btn.active { color: #1C1E1D; }
   .chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
   .chart-title { font-weight: 600; font-size: 1rem; }
   .chart-sub { font-size: 0.78rem; color: var(--stone); margin-top: 2px; }
   .chart-value { font-size: 1.3rem; white-space: nowrap; }
-  .chart-canvas-wrap { position: relative; height: 180px; }
+  .chart-canvas-wrap { position: relative; height: 300px; }
   .voltage-canvas-wrap { position: relative; height: 240px; }
   canvas.voltage-chart { touch-action: pan-y; }
   .chart-foot { margin-top: 10px; font-size: 0.8rem; color: var(--stone); }
@@ -324,7 +334,7 @@
     table.spec-table th, table.spec-table td { padding: 10px 4px; }
   }
   /* keep buttons comfortably tappable */
-  .range-btn, .trend-btn, .lang-btn, .reset-zoom-btn { min-height: 30px; }
+  .range-btn, .trend-btn, .lang-btn, .reset-zoom-btn, .mode-btn { min-height: 30px; }
 
   .adv-list { max-width: 72ch; }
   .adv-item { padding: 22px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 22px 1fr; gap: 18px; }
@@ -560,10 +570,16 @@ Position actuelle : 34.50 mm</div>
           <div class="chart-value mono" id="liveValuePosition">—</div>
         </div>
         <div class="chart-toolbar">
-          <div class="range-group" data-chart="position">
-            <button type="button" class="range-btn" data-range="24h">24h</button>
-            <button type="button" class="range-btn" data-range="7d">7j</button>
-            <button type="button" class="range-btn active" data-range="all">Tout</button>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div class="mode-group" id="positionModeGroup">
+              <button type="button" class="mode-btn active" data-mode="absolute" data-i18n="live.modeAbsolute">Absolue</button>
+              <button type="button" class="mode-btn" data-mode="relative" data-i18n="live.modeRelative">Relative</button>
+            </div>
+            <div class="range-group" data-chart="position">
+              <button type="button" class="range-btn" data-range="24h">24h</button>
+              <button type="button" class="range-btn" data-range="7d">7j</button>
+              <button type="button" class="range-btn active" data-range="all">Tout</button>
+            </div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="position" data-i18n="live.trendToggle">Tendance</button>
@@ -575,32 +591,6 @@ Position actuelle : 34.50 mm</div>
         <div class="chart-canvas-wrap"><canvas id="chartPosition" class="chart-canvas"></canvas></div>
         <div class="chart-foot" id="chartFootPosition" data-i18n="live.loading">Chargement des données…</div>
         <div class="trend-readout mono" id="trendPosition"></div>
-        <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-head">
-          <div>
-            <div class="chart-title" data-i18n="live.relPositionTitle">Position relative</div>
-            <div class="chart-sub" data-i18n="live.since">Depuis le 29.09.2026, 12h49</div>
-          </div>
-          <div class="chart-value mono" id="liveValueRelPosition">—</div>
-        </div>
-        <div class="chart-toolbar">
-          <div class="range-group" data-chart="relposition">
-            <button type="button" class="range-btn" data-range="24h">24h</button>
-            <button type="button" class="range-btn" data-range="7d">7j</button>
-            <button type="button" class="range-btn active" data-range="all">Tout</button>
-          </div>
-          <div class="toolbar-right">
-            <button type="button" class="trend-btn active" data-chart="relposition" data-i18n="live.trendToggle">Tendance</button>
-            <button type="button" class="forecast-btn" data-chart="relposition" data-i18n="live.forecastToggle">Prévision</button>
-            <button type="button" class="download-btn" data-chart="relposition" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
-            <button type="button" class="reset-zoom-btn" data-chart="relposition" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
-          </div>
-        </div>
-        <div class="chart-canvas-wrap"><canvas id="chartRelPosition" class="chart-canvas"></canvas></div>
-        <div class="chart-foot" id="chartFootRelPosition" data-i18n="live.loading">Chargement des données…</div>
-        <div class="trend-readout mono" id="trendRelPosition"></div>
         <div class="chart-hint" data-i18n="live.zoomHint">Glisser : sélectionner une zone &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom</div>
       </div>
       <div class="chart-card">
@@ -872,6 +862,10 @@ Position actuelle : 34.50 mm</div>
       "data.dtRelPosition": "Position relative",
       "live.positionTitle": "Position",
       "live.relPositionTitle": "Position relative",
+      "live.modeAbsolute": "Absolue",
+      "live.modeRelative": "Relative",
+      "live.positionTitleAbs": "Position absolue",
+      "live.positionTitleRel": "Position relative",
       "live.batteryTitle": "Tension batterie",
       "live.since": "Depuis le 29.09.2026, 12h49",
       "live.loading": "Chargement des données…",
@@ -1008,6 +1002,10 @@ Position actuelle : 34.50 mm</div>
       "data.dtRelPosition": "Relative position",
       "live.positionTitle": "Position",
       "live.relPositionTitle": "Relative position",
+      "live.modeAbsolute": "Absolute",
+      "live.modeRelative": "Relative",
+      "live.positionTitleAbs": "Absolute position",
+      "live.positionTitleRel": "Relative position",
       "live.batteryTitle": "Battery voltage",
       "live.since": "Since Sep 29, 2026, 12:49",
       "live.loading": "Loading data…",
@@ -1144,6 +1142,10 @@ Position actuelle : 34.50 mm</div>
       "data.dtRelPosition": "Relative Position",
       "live.positionTitle": "Position",
       "live.relPositionTitle": "Relative Position",
+      "live.modeAbsolute": "Absolut",
+      "live.modeRelative": "Relativ",
+      "live.positionTitleAbs": "Absolute Position",
+      "live.positionTitleRel": "Relative Position",
       "live.batteryTitle": "Batteriespannung",
       "live.since": "Seit dem 29.09.2026, 12:49 Uhr",
       "live.loading": "Daten werden geladen…",
@@ -1297,9 +1299,8 @@ Position actuelle : 34.50 mm</div>
   var POLL_INTERVAL = 12 * 60 * 60 * 1000; // 12h
 
   var posCanvas = document.getElementById('chartPosition');
-  var relCanvas = document.getElementById('chartRelPosition');
   var battCanvas = document.getElementById('chartBattery');
-  if (!posCanvas || !relCanvas || !battCanvas || typeof Chart === 'undefined') return;
+  if (!posCanvas || !battCanvas || typeof Chart === 'undefined') return;
 
   var LIVE_TXT = {
     fr: { updated: 'Dernière mesure : ', noData: 'Aucune donnée pour cette période pour le moment.', error: 'Données en direct indisponibles pour le moment.' },
@@ -1313,11 +1314,25 @@ Position actuelle : 34.50 mm</div>
 
   // full fetched datasets, kept in memory so range buttons can filter without refetching
   var store = {
-    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, showForecast: false, selection: null },
-    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true, showForecast: false, selection: null },
+    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, showForecast: false, selection: null, mode: 'absolute' },
+    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true, showForecast: false, selection: null }, // legacy slot, merged into the position chart
     battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true, showForecast: false, selection: null }
   };
   var FORECAST_DAYS = 10; // horizon of the forecast curve, in days
+
+  // ---- merged position series helpers ---------------------------------
+  // The position card displays either the ABSOLUTE or the RELATIVE sensor
+  // values (toggle button). Both series are fetched at once and stored as
+  // { x, abs, rel } records; these helpers expose them as plain [{x,y}]
+  // arrays for all the existing trend / regression / forecast machinery.
+  function posMode() { return store.position.mode || 'absolute'; }
+  function posY(p) { return posMode() === 'relative' ? p.rel : p.abs; }
+  function posPoints(key) {
+    if (key !== 'position') return store[key].points;
+    return store.position.points
+      .filter(function(p) { return typeof posY(p) === 'number' && isFinite(posY(p)); })
+      .map(function(p) { return { x: p.x, y: posY(p) }; });
+  }
 
   function downsample(arr, maxPoints) {
     if (arr.length <= maxPoints) return arr;
@@ -1395,6 +1410,31 @@ Position actuelle : 34.50 mm</div>
     });
   }
 
+  // fetch both position series (absolute + relative) in parallel and merge
+  // them into a single time-indexed map: { tms: { abs, rel } }. Each sensor
+  // can have its own sampling times; the union keeps every available point.
+  function fetchPositionSeries() {
+    return Promise.all([
+      fetchSeries(SENSOR_POSITION).catch(function() { return []; }),
+      fetchSeries(SENSOR_POSITION_REL).catch(function() { return []; })
+    ]).then(function(res) {
+      var map = {};
+      res[0].forEach(function(p) {
+        var k = p.x.getTime();
+        if (!map[k]) map[k] = { x: p.x };
+        map[k].abs = p.y;
+      });
+      res[1].forEach(function(p) {
+        var k = p.x.getTime();
+        if (!map[k]) map[k] = { x: p.x };
+        map[k].rel = p.y;
+      });
+      return Object.keys(map)
+        .map(function(k) { return map[k]; })
+        .sort(function(a, b) { return a.x - b.x; });
+    });
+  }
+
   function getColors() {
     var root = getComputedStyle(document.documentElement);
     return {
@@ -1464,7 +1504,7 @@ Position actuelle : 34.50 mm</div>
     var entry = store[key];
     if (!entry || !entry.chart) return null;
     var vis = currentVisibleRange(entry.chart);
-    var pts = entry.points.filter(function(p) {
+    var pts = posPoints(key).filter(function(p) {
       var t = p.x.getTime();
       return t >= vis.min && t <= vis.max;
     });
@@ -1482,8 +1522,8 @@ Position actuelle : 34.50 mm</div>
         typeof chart.scales.x.min === 'number' && typeof chart.scales.x.max === 'number') {
       spanMs = chart.scales.x.max - chart.scales.x.min;
     }
-    if ((!spanMs || spanMs <= 0) && entry && entry.points.length > 1) {
-      var f = filterByRange(entry.points, entry.range);
+    if ((!spanMs || spanMs <= 0) && entry && posPoints(key).length > 1) {
+      var f = filterByRange(posPoints(key), entry.range);
       if (f.length > 1) spanMs = f[f.length - 1].x.getTime() - f[0].x.getTime();
     }
     var days = spanMs / (24 * 60 * 60 * 1000);
@@ -1597,7 +1637,7 @@ Position actuelle : 34.50 mm</div>
               var ch = ctx.chart;
               ch._zoomed = true;
               var k = findKeyForChart(ch);
-              if (k) renderTrendReadout(k, filterByRange(store[k].points, store[k].range));
+              if (k) renderTrendReadout(k, filterByRange(posPoints(k), store[k].range));
             } },
             zoom: {
               drag: {
@@ -1621,7 +1661,7 @@ Position actuelle : 34.50 mm</div>
                 }
                 hideSelectionReadout(ch);
                 var k = findKeyForChart(ch);
-                if (k) renderTrendReadout(k, filterByRange(store[k].points, store[k].range));
+                if (k) renderTrendReadout(k, filterByRange(posPoints(k), store[k].range));
               }
             },
             limits: { x: { min: 'original', max: 'original' } }
@@ -1737,7 +1777,7 @@ Position actuelle : 34.50 mm</div>
   }
 
   function renderTrendReadout(key, points) {
-    var el = document.getElementById(key === 'position' ? 'trendPosition' : (key === 'battery' ? 'trendBattery' : 'trendRelPosition'));
+    var el = document.getElementById(key === 'position' ? 'trendPosition' : 'trendBattery');
     if (!el) return;
     var entry = store[key];
     if (!entry.showTrend && !entry.selection) { el.innerHTML = ''; return; }
@@ -1843,7 +1883,7 @@ Position actuelle : 34.50 mm</div>
     var key = findKeyForChart(chart);
     if (key && store[key].selection) {
       delete store[key].selection;
-      renderTrendReadout(key, filterByRange(store[key].points, store[key].range));
+      renderTrendReadout(key, filterByRange(posPoints(key), store[key].range));
     }
   }
 
@@ -1892,7 +1932,7 @@ Position actuelle : 34.50 mm</div>
       from = t1; to = t2;
     }
     // compute stats on ALL raw points inside the zone (not the visible subset)
-    var selPoints = entry.points.filter(function(p) {
+    var selPoints = posPoints(key).filter(function(p) {
       var t = p.x.getTime();
       return t >= from && t <= to;
     });
@@ -1906,7 +1946,7 @@ Position actuelle : 34.50 mm</div>
   function renderEntry(key, canvas, preserveScale) {
     var entry = store[key];
     var unit = key === 'battery' ? 'V' : 'mm';
-    var filtered = filterByRange(entry.points, entry.range);
+    var filtered = filterByRange(posPoints(key), entry.range);
     if (!entry.chart) {
       Chart.register(selectionPlugin);
       entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit, key, entry.showForecast);
@@ -1928,31 +1968,63 @@ Position actuelle : 34.50 mm</div>
     }
   }
 
-  function refreshOne(key, sensorId, canvas, valueElId, footElId) {
-    var valueEl = document.getElementById(valueElId);
-    var footEl = document.getElementById(footElId);
-    var entry = store[key];
-    var unit = key === 'battery' ? 'V' : 'mm';
+  function refreshPosition() {
+    var footEl = document.getElementById('chartFootPosition');
+    var entry = store.position;
     var rootStyle = getComputedStyle(document.documentElement);
-    entry.color = key === 'position'
-      ? (rootStyle.getPropertyValue('--accent') || '#C1601B').trim()
-      : key === 'battery'
-        ? (rootStyle.getPropertyValue('--accent-3') || '#5A7D5A').trim()
-        : (rootStyle.getPropertyValue('--accent-2') || '#3B6E7A').trim();
-    return fetchSeries(sensorId).then(function(points) {
+    entry.color = (rootStyle.getPropertyValue('--accent') || '#C1601B').trim();
+    return fetchPositionSeries().then(function(records) {
+      if (!records.length) {
+        liveMeta.position = { state: 'nodata' };
+        footEl.textContent = t().noData;
+        return;
+      }
+      entry.points = records;
+      var mode = posMode();
+      // latest reading of the currently displayed series (+ the other one for reference)
+      var lastAbs = null, lastRel = null;
+      for (var i = records.length - 1; i >= 0; i--) {
+        if (lastAbs === null && typeof records[i].abs === 'number') lastAbs = records[i];
+        if (lastRel === null && typeof records[i].rel === 'number') lastRel = records[i];
+        if (lastAbs && lastRel) break;
+      }
+      var shown = mode === 'relative' ? lastRel : lastAbs;
+      if (!shown) {
+        liveMeta.position = { state: 'nodata' };
+        footEl.textContent = t().noData;
+        return;
+      }
+      liveMeta.position = { state: 'ok', y: shown[mode === 'relative' ? 'rel' : 'abs'], x: shown.x, unit: 'mm' };
+      updatePositionValue();
+      footEl.textContent = t().updated + formatLiveDate(shown.x);
+      renderEntry('position', posCanvas);
+    }).catch(function() {
+      liveMeta.position = { state: 'error' };
+      footEl.textContent = t().error;
+    });
+  }
+
+  function refreshBattery() {
+    var valueEl = document.getElementById('liveValueBattery');
+    var footEl = document.getElementById('chartFootBattery');
+    var entry = store.battery;
+    var unit = 'V';
+    var rootStyle = getComputedStyle(document.documentElement);
+    entry.color = (rootStyle.getPropertyValue('--accent-3') || '#5A7D5A').trim();
+    return fetchSeries(SENSOR_BATTERY).then(function(points) {
       if (!points.length) {
-        liveMeta[key] = { state: 'nodata' };
+        liveMeta.battery = { state: 'nodata' };
         footEl.textContent = t().noData;
         return;
       }
       entry.points = points;
       var last = points[points.length - 1];
-      liveMeta[key] = { state: 'ok', y: last.y, x: last.x, unit: unit };
+      liveMeta.battery = { state: 'ok', y: last.y, x: last.x, unit: unit };
       valueEl.textContent = last.y.toFixed(2).replace('.', ',') + ' ' + unit;
       footEl.textContent = t().updated + formatLiveDate(last.x);
-      renderEntry(key, canvas);
+      renderEntry('battery', battCanvas);
     }).catch(function() {
-      liveMeta[key] = { state: 'error' };
+      liveMeta.battery = { state: 'error' };
       footEl.textContent = t().error;
     });
   }
@@ -1960,11 +2032,10 @@ Position actuelle : 34.50 mm</div>
   // re-render all dynamic texts (footer "last reading" lines + trend readouts)
   // in the current language right after a FR/EN/DE switch
   window.addEventListener('cm:langchange', function() {
-    ['position', 'relposition', 'battery'].forEach(function(key) {
+    ['position', 'battery'].forEach(function(key) {
       var meta = liveMeta[key];
       if (!meta) return;
-      var footElId = key === 'position' ? 'chartFootPosition'
-        : key === 'battery' ? 'chartFootBattery' : 'chartFootRelPosition';
+      var footElId = key === 'position' ? 'chartFootPosition' : 'chartFootBattery';
       var footEl = document.getElementById(footElId);
       if (!footEl) return;
       if (meta.state === 'nodata') {
@@ -1974,11 +2045,13 @@ Position actuelle : 34.50 mm</div>
       } else {
         footEl.textContent = t().updated + formatLiveDate(meta.x);
       }
+      // keep the header value in sync (position card shows both series)
+      if (key === 'position' && meta.state === 'ok') updatePositionValue();
       // rebuild the trend sentence / selection readout in the new language
       var entry = store[key];
       if (entry.chart && entry.chart._selRange) {
         var sel = entry.chart._selRange;
-        var pts = filterByRange(entry.points, entry.range).filter(function(p) {
+        var pts = filterByRange(posPoints(key), entry.range).filter(function(p) {
           return p.x >= sel.from && p.x <= sel.to;
         });
         if (pts.length >= 2) {
@@ -1988,18 +2061,36 @@ Position actuelle : 34.50 mm</div>
           return;
         }
       }
-      renderTrendReadout(key, filterByRange(entry.points, entry.range));
+      renderTrendReadout(key, filterByRange(posPoints(key), entry.range));
     });
   });
 
   function canvasForKey(key) {
-    return key === 'position' ? posCanvas : (key === 'battery' ? battCanvas : relCanvas);
+    return key === 'position' ? posCanvas : battCanvas;
+  }
+
+  // header value of the merged position card: "<shown> mm / <other> mm"
+  function updatePositionValue() {
+    var valueEl = document.getElementById('liveValuePosition');
+    if (!valueEl) return;
+    var records = store.position.points;
+    var lastAbs = null, lastRel = null;
+    for (var i = records.length - 1; i >= 0; i--) {
+      if (lastAbs === null && typeof records[i].abs === 'number') lastAbs = records[i].abs;
+      if (lastRel === null && typeof records[i].rel === 'number') lastRel = records[i].rel;
+      if (lastAbs !== null && lastRel !== null) break;
+    }
+    var shown = posMode() === 'relative' ? lastRel : lastAbs;
+    var other = posMode() === 'relative' ? lastAbs : lastRel;
+    if (typeof shown !== 'number') { valueEl.textContent = '—'; return; }
+    var txt = shown.toFixed(2).replace('.', ',') + ' mm';
+    if (typeof other === 'number') txt += ' / ' + other.toFixed(2).replace('.', ',') + ' mm';
+    valueEl.textContent = txt;
   }
 
   function refreshAll() {
-    refreshOne('position', SENSOR_POSITION, posCanvas, 'liveValuePosition', 'chartFootPosition');
-    refreshOne('relposition', SENSOR_POSITION_REL, relCanvas, 'liveValueRelPosition', 'chartFootRelPosition');
-    refreshOne('battery', SENSOR_BATTERY, battCanvas, 'liveValueBattery', 'chartFootBattery');
+    refreshPosition();
+    refreshBattery();
   }
 
   // range-button wiring (full re-fit: zoom and selection are cleared)
@@ -2226,10 +2317,11 @@ Position actuelle : 34.50 mm</div>
 
   function downloadXlsx(key) {
     var entry = store[key];
-    if (!entry || !entry.points.length) return;
+    var pts = posPoints(key);
+    if (!entry || !pts.length) return;
     var lang = document.documentElement.lang || 'fr';
     var labels = EXPORT_LABELS[lang] || EXPORT_LABELS.fr;
-    var blob = buildZip(buildXlsxParts(entry.points, labels));
+    var blob = buildZip(buildXlsxParts(pts, labels));
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     var d = new Date();
@@ -2247,6 +2339,33 @@ Position actuelle : 34.50 mm</div>
       downloadXlsx(btn.getAttribute('data-chart'));
     });
   });
+
+  // ---- absolute / relative mode toggle on the merged position card ----
+  var posTitleEl = document.querySelector('[data-i18n="live.positionTitle"]');
+  function applyPosModeUI() {
+    var rel = posMode() === 'relative';
+    if (posTitleEl) {
+      posTitleEl.textContent = i18nGet(rel ? 'live.positionTitleRel' : 'live.positionTitleAbs');
+    }
+    document.querySelectorAll('#positionModeGroup .mode-btn').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-mode') === (rel ? 'relative' : 'absolute'));
+    });
+  }
+  document.querySelectorAll('#positionModeGroup .mode-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mode = btn.getAttribute('data-mode');
+      if (store.position.mode === mode) return;
+      store.position.mode = mode;
+      store.position.selection = null;
+      if (store.position.chart) store.position.chart._selRange = null;
+      applyPosModeUI();
+      updatePositionValue();
+      // re-render with a full refit so the y-axis adapts to the new series
+      renderEntry('position', posCanvas, false);
+    });
+  });
+  window.addEventListener('cm:langchange', applyPosModeUI);
+  applyPosModeUI();
 
   refreshAll();
   setInterval(refreshAll, POLL_INTERVAL);
