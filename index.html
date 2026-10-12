@@ -273,6 +273,10 @@
   .trend-btn::before { content: ''; width: 9px; height: 2px; background: var(--stone); display: inline-block; }
   .trend-btn.active { color: var(--ink); border-color: var(--ink); }
   .trend-btn.active::before { background: var(--accent); }
+  /* forecast toggle: dotted marker + violet accent to match the forecast curve */
+  .forecast-btn::before { width: 9px; height: 9px; border-radius: 50%; border: 2px dotted var(--stone); background: transparent; }
+  .forecast-btn.active { color: var(--ink); border-color: #7B5EA7; }
+  .forecast-btn.active::before { border-color: #7B5EA7; }
   .download-btn {
     font-family: 'IBM Plex Sans', sans-serif; font-size: 0.75rem; font-weight: 500;
     background: transparent; color: var(--stone); border: 1px solid var(--line); border-radius: var(--radius);
@@ -563,6 +567,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="position" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="forecast-btn" data-chart="position" data-i18n="live.forecastToggle">Prévision</button>
             <button type="button" class="download-btn" data-chart="position" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="position" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
@@ -588,6 +593,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="relposition" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="forecast-btn" data-chart="relposition" data-i18n="live.forecastToggle">Prévision</button>
             <button type="button" class="download-btn" data-chart="relposition" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="relposition" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
@@ -613,6 +619,7 @@ Position actuelle : 34.50 mm</div>
           </div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="battery" data-i18n="live.trendToggle">Tendance</button>
+            <button type="button" class="forecast-btn" data-chart="battery" data-i18n="live.forecastToggle">Prévision</button>
             <button type="button" class="download-btn" data-chart="battery" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="battery" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
@@ -871,6 +878,9 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Réinitialiser le zoom",
       "live.zoomHint": "Glisser : sélectionner une zone (zoom + tendance) &middot; Maj + glisser : déplacer &middot; Ctrl + molette : zoom &middot; pincer : zoom",
       "live.trendToggle": "Tendance",
+      "live.forecastToggle": "Prévision 10 j",
+      "live.forecastDays": "j",
+      "live.forecastNote": "Projection linéaire des 10 prochains jours &agrave; partir de la tendance affichée &mdash; indicatif, &agrave; confirmer par les mesures.",
       "live.download": "Excel",
       "live.trendRising": "Tendance : +{rate} {unit}/semaine",
       "live.trendFalling": "Tendance : {rate} {unit}/semaine",
@@ -1004,6 +1014,9 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Reset zoom",
       "live.zoomHint": "Drag: select a zone (zoom + trend) &middot; Shift + drag: pan &middot; Ctrl + scroll: zoom &middot; pinch: zoom",
       "live.trendToggle": "Trend",
+      "live.forecastToggle": "Forecast 10 d",
+      "live.forecastDays": "d",
+      "live.forecastNote": "Linear projection of the next 10 days from the displayed trend &mdash; indicative only, to be confirmed by measurements.",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/week",
       "live.trendFalling": "Trend: {rate} {unit}/week",
@@ -1137,6 +1150,9 @@ Position actuelle : 34.50 mm</div>
       "live.resetZoom": "Zoom zurücksetzen",
       "live.zoomHint": "Ziehen: Zone auswählen (Zoom + Trend) &middot; Umschalt + Ziehen: Verschieben &middot; Strg + Mausrad: Zoom &middot; Pinch: Zoom",
       "live.trendToggle": "Trend",
+      "live.forecastToggle": "Prognose 10 T",
+      "live.forecastDays": "T.",
+      "live.forecastNote": "Lineare Projektion der n&auml;chsten 10 Tage auf Basis des angezeigten Trends &mdash; richtungsweisend, durch Messungen zu best&auml;tigen.",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/Woche",
       "live.trendFalling": "Trend: {rate} {unit}/Woche",
@@ -1297,10 +1313,11 @@ Position actuelle : 34.50 mm</div>
 
   // full fetched datasets, kept in memory so range buttons can filter without refetching
   var store = {
-    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, selection: null },
-    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true, selection: null },
-    battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true, selection: null }
+    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, showForecast: false, selection: null },
+    relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true, showForecast: false, selection: null },
+    battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true, showForecast: false, selection: null }
   };
+  var FORECAST_DAYS = 10; // horizon of the forecast curve, in days
 
   function downsample(arr, maxPoints) {
     if (arr.length <= maxPoints) return arr;
@@ -1325,6 +1342,29 @@ Position actuelle : 34.50 mm</div>
     var slope = (n * sumXY - sumX * sumY) / denom;
     var intercept = (sumY - slope * sumX) / n;
     return { slope: slope, intercept: intercept, x0: x0 };
+  }
+
+  // ---- forecast ----------------------------------------------------------
+  // Project the linear regression of the last `days` of data forward over a
+  // horizon of the same length (up to FORECAST_DAYS), with a dotted segment
+  // bridging the last smoothed-trend point to the start of the projection.
+  // Returns null when there is not enough recent data for a meaningful fit.
+  function buildForecastData(points, trendPts, days) {
+    if (!points || points.length < 6 || !trendPts || trendPts.length < 2) return null;
+    var spanMs = days * 24 * 60 * 60 * 1000;
+    var tEnd = points[points.length - 1].x.getTime();
+    var cutoff = tEnd - spanMs;
+    var recent = points.filter(function(p) { return p.x.getTime() >= cutoff; });
+    if (recent.length < 5) return null;
+    var reg = linearRegression(recent);
+    if (!reg) return null;
+    var out = [{ x: trendPts[trendPts.length - 1].x, y: trendPts[trendPts.length - 1].y }];
+    var stepMs = spanMs / 20; // ~half-day resolution over the horizon
+    for (var k = 0; k <= 20; k++) {
+      var t = tEnd + k * stepMs;
+      out.push({ x: new Date(t), y: reg.intercept + reg.slope * (t - reg.x0) });
+    }
+    return out;
   }
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -1432,6 +1472,44 @@ Position actuelle : 34.50 mm</div>
     return linearRegression(pts);
   }
 
+  // forecast horizon (in days, capped at FORECAST_DAYS): the width of the
+  // currently displayed window — so zooming/panning and the range buttons
+  // naturally refine the projection base
+  function forecastHorizonDays(chart, key) {
+    var entry = store[key];
+    var spanMs = 0;
+    if (chart && chart.scales && chart.scales.x &&
+        typeof chart.scales.x.min === 'number' && typeof chart.scales.x.max === 'number') {
+      spanMs = chart.scales.x.max - chart.scales.x.min;
+    }
+    if ((!spanMs || spanMs <= 0) && entry && entry.points.length > 1) {
+      var f = filterByRange(entry.points, entry.range);
+      if (f.length > 1) spanMs = f[f.length - 1].x.getTime() - f[0].x.getTime();
+    }
+    var days = spanMs / (24 * 60 * 60 * 1000);
+    if (!isFinite(days) || days <= 0) return FORECAST_DAYS;
+    return Math.min(Math.max(days, 1), FORECAST_DAYS);
+  }
+
+  // build the "forecast" dataset config from the raw + smoothed series
+  function makeForecastDataset(key, points, trendPts, chart) {
+    var data = buildForecastData(points, trendPts, forecastHorizonDays(chart, key));
+    if (!data) return null;
+    return {
+      label: 'forecast',
+      data: data,
+      borderColor: '#7B5EA7',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [2, 3],
+      pointRadius: 0,
+      pointHitRadius: 0,
+      tension: 0,
+      spanGaps: true,
+      order: -1
+    };
+  }
+
   // keep the same pixels-per-millisecond ratio when re-rendering after a
   // range/trend change, unless we are doing a full reset
   function computeTimeBounds(chart, points, preserveScale) {
@@ -1450,11 +1528,14 @@ Position actuelle : 34.50 mm</div>
     return { min: min, max: max, reset: true };
   }
 
-  function buildChart(canvas, points, color, showTrend, unit) {
+  function buildChart(canvas, points, color, showTrend, unit, key, showForecast) {
     unit = unit || 'mm';
     var colors = getColors();
     var series = points.map(function(p) { return { x: p.x, y: p.y }; });
-    var trend = showTrend ? smoothTrendValuesTime(points, pickWindowMs(points)) : null;
+    // when the trend line is hidden but the forecast is on, compute the
+    // smoothing anyway (needed as anchor) but keep the dataset itself off
+    var trendAll = smoothTrendValuesTime(points, pickWindowMs(points));
+    var trend = showTrend ? trendAll : null;
     var datasets = [{
       label: 'series',
       data: series,
@@ -1484,6 +1565,11 @@ Position actuelle : 34.50 mm</div>
       });
     }
     var bounds = computeTimeBounds({ _lastFullSpan: false, chartArea: null }, points, false);
+    // forecast needs the smoothed curve as anchor (trendAll, even if hidden)
+    if (showForecast && trendAll) {
+      var fDs = makeForecastDataset(key, points, trendAll, null);
+      if (fDs) datasets.push(fDs);
+    }
     var chart = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: { datasets: datasets },
@@ -1545,7 +1631,7 @@ Position actuelle : 34.50 mm</div>
           x: {
             type: 'time',
             min: bounds.min,
-            max: bounds.max,
+            max: showForecast ? Math.max(bounds.max, points[points.length - 1].x.getTime() + forecastHorizonDays(null, key) * 24 * 60 * 60 * 1000) : bounds.max,
             time: {
               tooltipFormat: 'dd.MM.yyyy HH:mm',
               displayFormats: {
@@ -1563,14 +1649,22 @@ Position actuelle : 34.50 mm</div>
     });
     chart._lastFullSpan = bounds.max - bounds.min;
     chart._unit = unit;
+    if (showForecast) {
+      // remember the original data extent so "reset zoom" can restore it
+      // even though the x axis was extended to fit the forecast curve
+      chart._cmDataMax = points[points.length - 1].x.getTime();
+    }
     return chart;
   }
 
-  function updateChart(chart, points, color, showTrend, unit, preserveScale) {
+  function updateChart(chart, points, color, showTrend, unit, preserveScale, key, showForecast) {
     unit = unit || 'mm';
     chart._unit = unit;
     var series = points.map(function(p) { return { x: p.x, y: p.y }; });
-    var trend = showTrend ? smoothTrendValuesTime(points, pickWindowMs(points)) : null;
+    // smoothing is needed both for the visible trend line and as anchor of
+    // the forecast curve; the dataset itself stays off when showTrend is false
+    var trendAll = smoothTrendValuesTime(points, pickWindowMs(points));
+    var trend = showTrend ? trendAll : null;
     var colors = getColors();
     chart.data.datasets[0].data = series;
     chart.data.datasets[0].borderColor = color;
@@ -1579,18 +1673,31 @@ Position actuelle : 34.50 mm</div>
         return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
       };
     }
+    // forecast dataset management (always the LAST dataset when present)
+    var fIdx = -1;
+    for (var fi = chart.data.datasets.length - 1; fi >= 1; fi--) {
+      if (chart.data.datasets[fi].label === 'forecast') { fIdx = fi; break; }
+    }
+    var fDs = showForecast && trendAll ? makeForecastDataset(key, points, trendAll, chart) : null;
+    if (!showForecast && fIdx !== -1) { chart.data.datasets.splice(fIdx, 1); fIdx = -1; }
     if (trend) {
-      if (chart.data.datasets.length > 1) {
+      if (chart.data.datasets.length > 1 && chart.data.datasets[1].label === 'trend') {
         chart.data.datasets[1].data = trend;
       } else {
-        chart.data.datasets.push({
+        chart.data.datasets.splice(1, 0, {
           label: 'trend', data: trend, borderColor: colors.ink, backgroundColor: 'transparent',
           borderWidth: 1.25, borderDash: [5, 4], pointRadius: 0, pointHitRadius: 0,
           tension: 0.5, spanGaps: true, order: 0
         });
+        if (fIdx !== -1) fIdx++; // trend insertion shifted the forecast index
       }
-    } else if (chart.data.datasets.length > 1) {
+    } else if (chart.data.datasets.length > 1 && chart.data.datasets[1].label === 'trend') {
       chart.data.datasets.splice(1, 1);
+      if (fIdx !== -1) fIdx--;
+    }
+    if (fDs) {
+      if (fIdx !== -1) chart.data.datasets[fIdx] = fDs;
+      else chart.data.datasets.push(fDs);
     }
     if (preserveScale && !chart._zoomed) {
       // keep the current time-window width (uniform temporal scale)
@@ -1600,12 +1707,17 @@ Position actuelle : 34.50 mm</div>
       var min = Math.max(dmin - (dmax - dmin) * 0.01, vis.min);
       var max = Math.min(dmax + (dmax - dmin) * 0.01, min + width);
       if (max - min < 1000) { min = dmin; max = dmax + 1000; }
+      if (showForecast) max = Math.max(max, dmax + forecastHorizonDays(chart, key) * 24 * 60 * 60 * 1000);
       chart.options.scales.x.min = min;
       chart.options.scales.x.max = max;
     } else {
       var bounds = computeTimeBounds(chart, points, preserveScale && !chart._zoomed);
       chart.options.scales.x.min = bounds.min;
       chart.options.scales.x.max = bounds.max;
+      if (showForecast) {
+        chart.options.scales.x.max = Math.max(bounds.max, points[points.length - 1].x.getTime() + forecastHorizonDays(chart, key) * 24 * 60 * 60 * 1000);
+        chart._cmDataMax = points[points.length - 1].x.getTime();
+      }
       if (!preserveScale) {
         chart._zoomed = false;
         chart._lastFullSpan = bounds.max - bounds.min;
@@ -1652,7 +1764,26 @@ Position actuelle : 34.50 mm</div>
     }
     var reg = linearRegression(points);
     var perWeek = formatTrendRate(reg);
-    el.innerHTML = trendSentence(perWeek, unit, digits) + ' &mdash; <span class="trend-note">' + i18nGet('live.trendNote') + '</span>';
+    var html = trendSentence(perWeek, unit, digits) + ' &mdash; <span class="trend-note">' + i18nGet('live.trendNote') + '</span>';
+    // forecast readout: projected value at the end of the horizon
+    if (entry.showForecast && entry.chart && reg) {
+      var fData = null;
+      for (var di = entry.chart.data.datasets.length - 1; di >= 0; di--) {
+        if (entry.chart.data.datasets[di].label === 'forecast') { fData = entry.chart.data.datasets[di].data; break; }
+      }
+      if (fData && fData.length > 1) {
+        var lastF = fData[fData.length - 1];
+        var horizonDays = Math.max(1, Math.round((lastF.x.getTime() - points[points.length - 1].x.getTime()) / (24 * 60 * 60 * 1000)));
+        var delta = lastF.y - points[points.length - 1].y;
+        var sign = delta >= 0 ? '+' : '\u2212';
+        html += '<br><span style="color:#7B5EA7">&#9673; ' + i18nGet('live.forecastToggle') + ' (' + horizonDays + ' j)</span>' +
+          ' ' + sign + delta.toFixed(digits).replace('.', ',') + ' ' + unit + ' \u2192 ' +
+          lastF.y.toFixed(digits).replace('.', ',') + ' ' + unit + ' ' +
+          i18nGet('msg.over') + ' ' + formatLabel(lastF.x) +
+          ' &mdash; <span class="trend-note">' + i18nGet('live.forecastNote') + '</span>';
+      }
+    }
+    el.innerHTML = html;
   }
 
   function i18nGet(key) {
@@ -1778,9 +1909,9 @@ Position actuelle : 34.50 mm</div>
     var filtered = filterByRange(entry.points, entry.range);
     if (!entry.chart) {
       Chart.register(selectionPlugin);
-      entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit);
+      entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit, key, entry.showForecast);
     } else {
-      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit, preserveScale);
+      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit, preserveScale, key, entry.showForecast);
     }
     renderTrendReadout(key, filtered);
   }
@@ -1880,7 +2011,15 @@ Position actuelle : 34.50 mm</div>
         btn.classList.add('active');
         store[key].range = btn.getAttribute('data-range');
         store[key].selection = null;
-        if (store[key].chart) { store[key].chart._selRange = null; store[key].chart._zoomed = false; }
+        if (store[key].chart) {
+          store[key].chart._selRange = null;
+          store[key].chart._zoomed = false;
+          if (!store[key].showForecast) {
+            // drop any stale x-bounds inherited from a previous forecast view
+            delete store[key].chart.options.scales.x.min;
+            delete store[key].chart.options.scales.x.max;
+          }
+        }
         renderEntry(key, canvasForKey(key), false);
       });
     });
@@ -1895,18 +2034,38 @@ Position actuelle : 34.50 mm</div>
       if (chart) {
         chart._selRange = null;
         chart._zoomed = false;
-        if (chart.resetZoom) chart.resetZoom();
+        if (chart.resetZoom) {
+          try { chart.resetZoom('none'); } catch (e) { /* older plugin builds */ }
+        }
+        // the zoom plugin clamps panning/zooming to the ORIGINAL axis bounds,
+        // which include the forecast extension; restore them to the data extent
+        if (typeof chart._cmDataMax === 'number') {
+          var padX = (chart._cmDataMax - chart.options.scales.x.min) * 0.01;
+          chart.options.scales.x.max = chart._cmDataMax + padX;
+          if (chart.zoom && chart.zoom.scaleLimits) {
+            chart.zoom.scaleLimits.x = { min: chart.options.scales.x.min, max: chart.options.scales.x.max };
+          }
+        }
       }
       renderEntry(key, canvasForKey(key), false);
     });
   });
 
-  // trend toggle wiring (keeps the current time window / scale)
+  // trend + forecast toggle wiring (keeps the current time window / scale)
   document.querySelectorAll('.trend-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var key = btn.getAttribute('data-chart');
       store[key].showTrend = !store[key].showTrend;
       btn.classList.toggle('active', store[key].showTrend);
+      renderEntry(key, canvasForKey(key), true);
+    });
+  });
+
+  document.querySelectorAll('.forecast-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var key = btn.getAttribute('data-chart');
+      store[key].showForecast = !store[key].showForecast;
+      btn.classList.toggle('active', store[key].showForecast);
       renderEntry(key, canvasForKey(key), true);
     });
   });
