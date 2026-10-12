@@ -880,7 +880,6 @@ Position actuelle : 34.50 mm</div>
       "live.tempTooltipPrefix": "Température",
       "live.forecastTooltipPrefix": "Prévision",
       "live.tempTooltipNoData": "Température : pas de donnée à cette date",
-      "live.forecastTooltipNote": "Pas de prévision à cette date",
       "live.download": "Excel",
       "live.trendRising": "Tendance : +{rate} {unit}/semaine",
       "live.trendFalling": "Tendance : {rate} {unit}/semaine",
@@ -1026,7 +1025,6 @@ Position actuelle : 34.50 mm</div>
       "live.tempTooltipPrefix": "Temperature",
       "live.forecastTooltipPrefix": "Forecast",
       "live.tempTooltipNoData": "Temperature: no data for this date",
-      "live.forecastTooltipNote": "No forecast for this date",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/week",
       "live.trendFalling": "Trend: {rate} {unit}/week",
@@ -1172,7 +1170,6 @@ Position actuelle : 34.50 mm</div>
       "live.tempTooltipPrefix": "Temperatur",
       "live.forecastTooltipPrefix": "Prognose",
       "live.tempTooltipNoData": "Temperatur: keine Daten zu diesem Datum",
-      "live.forecastTooltipNote": "Keine Prognose zu diesem Datum",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/Woche",
       "live.trendFalling": "Trend: {rate} {unit}/Woche",
@@ -1731,16 +1728,17 @@ Position actuelle : 34.50 mm</div>
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        interaction: { mode: 'x', intersect: false },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
         plugins: {
           legend: { display: false },
           crackmeterSelection: { showBand: true },
           tooltip: {
-            // main series, temperature overlay and (beyond the last measure)
-            // the forecast curve appear in tooltips; the trend helper never does
+            // keep the previous interaction behaviour: the tooltip is driven
+            // by the main series / temperature points only (mode 'nearest').
+            // The forecast value is injected manually via `tooltipLabel`.
             filter: function(ctx) {
               var l = ctx.chart.data.datasets[ctx.datasetIndex] && ctx.chart.data.datasets[ctx.datasetIndex].label;
-              return ctx.datasetIndex === 0 || l === 'temp' || l === 'forecast';
+              return ctx.datasetIndex === 0 || l === 'temp';
             },
             callbacks: {
               title: function(items) {
@@ -1809,6 +1807,7 @@ Position actuelle : 34.50 mm</div>
     });
     chart._lastFullSpan = bounds.max - bounds.min;
     chart._unit = unit;
+    chart._isPosition = (key === 'position');
     if (showForecast) {
       // remember the original data extent so "reset zoom" can restore it
       // even though the x axis was extended to fit the forecast curve
@@ -1820,6 +1819,7 @@ Position actuelle : 34.50 mm</div>
   function updateChart(chart, points, color, showTrend, unit, preserveScale, key, showForecast, tempData) {
     unit = unit || 'mm';
     chart._unit = unit;
+    if (key) chart._isPosition = (key === 'position');
     var series = points.map(function(p) { return { x: p.x, y: p.y }; });
     // smoothing is needed both for the visible trend line and as anchor of
     // the forecast curve; the dataset itself stays off when showTrend is false
@@ -1986,38 +1986,62 @@ Position actuelle : 34.50 mm</div>
   }
 
   // ---- shared tooltip helpers --------------------------------------------
-  // main series / temperature / forecast values, with localized prefixes.
-  // The forecast dataset is a helper curve hidden from tooltips by the
-  // "filter" option; hovering snaps to it via interaction.mode 'x' and we
-  // surface its projected value here instead (only beyond the last measure).
+  // main series / temperature values with localized prefixes. The forecast
+  // dataset is never part of the tooltip items (helper curve, pointHitRadius
+  // 0); when hovering beyond the last measurement we inject its projected
+  // value manually into the position chart tooltip instead.
   function tooltipLabel(ctx) {
     var lbl = ctx.dataset.label;
     if (lbl === 'temp') return i18nGet('live.tempTooltipPrefix') + ' : ' + ctx.parsed.y.toFixed(1).replace('.', ',') + ' °C';
-    if (lbl === 'forecast') {
-      var ch = ctx.chart;
-      var k = findKeyForChart(ch);
-      if (k) {
-        var pts = posPoints(k);
-        if (pts.length && ctx.parsed.x <= pts[pts.length - 1].x.getTime()) return null;
+    var ch = ctx.chart;
+    var out = [ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + (ch._unit || 'mm')];
+    if (ch._isPosition && store.position.showForecast) {
+      var fTs = typeof ctx.parsed.x === 'number' ? ctx.parsed.x : (ctx.raw && ctx.raw.x instanceof Date ? ctx.raw.x.getTime() : null);
+      if (fTs !== null) {
+        var fv = lookupForecastValue(ch, fTs);
+        if (fv !== null) {
+          out.push(i18nGet('live.forecastTooltipPrefix') + ' : ' + fv.toFixed(4).replace('.', ',') + ' ' + (ch._unit || 'mm'));
+        }
       }
-      var unit = ch._unit || 'mm';
-      var digits = unit === 'V' ? 4 : 2;
-      return i18nGet('live.forecastTooltipPrefix') + ' : ' + ctx.parsed.y.toFixed(digits).replace('.', ',') + ' ' + unit;
     }
-    var u = ctx.chart._unit || 'mm';
-    return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + u;
+    return out;
+  }
+  // linear interpolation of the forecast dataset at timestamp tsMs (null if
+  // outside the forecast range or dataset absent)
+  function lookupForecastValue(chart, tsMs) {
+    var fd = null;
+    for (var i = 0; i < chart.data.datasets.length; i++) {
+      if (chart.data.datasets[i].label === 'forecast') { fd = chart.data.datasets[i]; break; }
+    }
+    if (!fd || !fd.data || !fd.data.length) return null;
+    var dts = [];
+    for (var j = 0; j < fd.data.length; j++) {
+      var p = fd.data[j];
+      var t = p.x instanceof Date ? p.x.getTime() : p.x;
+      if (typeof t === 'number' && isFinite(t)) dts.push({ t: t, y: p.y });
+    }
+    if (!dts.length) return null;
+    if (tsMs < dts[0].t || tsMs > dts[dts.length - 1].t) return null;
+    for (var k = 1; k < dts.length; k++) {
+      if (dts[k].t >= tsMs) {
+        var a = dts[k - 1], b = dts[k];
+        if (b.t === a.t) return b.y;
+        return a.y + (b.y - a.y) * (tsMs - a.t) / (b.t - a.t);
+      }
+    }
+    return dts[dts.length - 1].y;
   }
   function afterBodyHook(items) {
     if (!items || !items.length) return [];
-    var hasF = false, hasT = false;
+    var hasT = false;
     for (var i = 0; i < items.length; i++) {
-      var l = items[i].dataset.label;
-      if (l === 'forecast') hasF = true;
-      if (l === 'temp') hasT = true;
+      if (items[i].dataset.label === 'temp') hasT = true;
     }
     var out = [];
-    if (!hasT) out.push(i18nGet('live.tempTooltipNoData'));
-    if (!hasF) out.push(i18nGet('live.forecastTooltipNote'));
+    // only mention missing temperature when the overlay is actually ON but
+    // there is no GRA data at this date (e.g. before Jan 2026)
+    var key = findKeyForChart(items[0].chart);
+    if (!hasT && key && store[key] && store[key].showTemp) out.push(i18nGet('live.tempTooltipNoData'));
     return out;
   }
   function applyTooltipCallbacks(chart) {
