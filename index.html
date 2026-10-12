@@ -287,6 +287,9 @@
   .forecast-btn::before { width: 9px; height: 9px; border-radius: 50%; border: 2px dotted var(--stone); background: transparent; }
   .forecast-btn.active { color: var(--ink); border-color: #7B5EA7; }
   .forecast-btn.active::before { border-color: #7B5EA7; }
+  /* temperature toggle (MeteoSwiss GRA): thermometer glyph + blue accent to match the °C curve */
+  .temp-btn::before { content: '\1F321'; font-size: 0.8rem; line-height: 1; }
+  .temp-btn.active { color: var(--ink); border-color: #2E6FAC; }
   .download-btn {
     font-family: 'IBM Plex Sans', sans-serif; font-size: 0.75rem; font-weight: 500;
     background: transparent; color: var(--stone); border: 1px solid var(--line); border-radius: var(--radius);
@@ -584,6 +587,7 @@ Position actuelle : 34.50 mm</div>
           <div class="toolbar-right">
             <button type="button" class="trend-btn active" data-chart="position" data-i18n="live.trendToggle">Tendance</button>
             <button type="button" class="forecast-btn" data-chart="position" data-i18n="live.forecastToggle">Prévision</button>
+            <button type="button" class="temp-btn" data-chart="position" data-i18n="live.tempToggle">Température</button>
             <button type="button" class="download-btn" data-chart="position" title="Télécharger en XLSX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg><span data-i18n="live.download">Excel</span></button>
             <button type="button" class="reset-zoom-btn" data-chart="position" data-i18n="live.resetZoom">Réinitialiser le zoom</button>
           </div>
@@ -875,6 +879,9 @@ Position actuelle : 34.50 mm</div>
       "live.forecastToggle": "Prévision 10 j",
       "live.forecastDays": "j",
       "live.forecastNote": "Projection linéaire des 10 prochains jours &agrave; partir de la tendance affichée &mdash; indicatif, &agrave; confirmer par les mesures.",
+      "live.tempToggle": "Température",
+      "live.tempSource": "Température horaire : station MeteoSuisse Fribourg/Grangeneuve (GRA) &mdash; données OGD, licence CC-BY.",
+      "live.tempError": "Données de température indisponibles pour le moment.",
       "live.download": "Excel",
       "live.trendRising": "Tendance : +{rate} {unit}/semaine",
       "live.trendFalling": "Tendance : {rate} {unit}/semaine",
@@ -1015,6 +1022,9 @@ Position actuelle : 34.50 mm</div>
       "live.forecastToggle": "Forecast 10 d",
       "live.forecastDays": "d",
       "live.forecastNote": "Linear projection of the next 10 days from the displayed trend &mdash; indicative only, to be confirmed by measurements.",
+      "live.tempToggle": "Temperature",
+      "live.tempSource": "Hourly temperature: MeteoSwiss station Fribourg/Grangeneuve (GRA) &mdash; OGD data, CC-BY license.",
+      "live.tempError": "Temperature data unavailable at the moment.",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/week",
       "live.trendFalling": "Trend: {rate} {unit}/week",
@@ -1155,6 +1165,9 @@ Position actuelle : 34.50 mm</div>
       "live.forecastToggle": "Prognose 10 T",
       "live.forecastDays": "T.",
       "live.forecastNote": "Lineare Projektion der n&auml;chsten 10 Tage auf Basis des angezeigten Trends &mdash; richtungsweisend, durch Messungen zu best&auml;tigen.",
+      "live.tempToggle": "Temperatur",
+      "live.tempSource": "St&uuml;ndliche Temperatur: MeteoSchweiz-Station Freiburg/Grangeneuve (GRA) &mdash; OGD-Daten, Lizenz CC-BY.",
+      "live.tempError": "Temperaturdaten derzeit nicht verf&uuml;gbar.",
       "live.download": "Excel",
       "live.trendRising": "Trend: +{rate} {unit}/Woche",
       "live.trendFalling": "Trend: {rate} {unit}/Woche",
@@ -1314,11 +1327,65 @@ Position actuelle : 34.50 mm</div>
 
   // full fetched datasets, kept in memory so range buttons can filter without refetching
   var store = {
-    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, showForecast: false, selection: null, mode: 'absolute' },
+    position: { chart: null, points: [], range: 'all', color: '#C1601B', showTrend: true, showForecast: false, selection: null, mode: 'absolute', showTemp: false },
     relposition: { chart: null, points: [], range: 'all', color: '#3B6E7A', showTrend: true, showForecast: false, selection: null }, // legacy slot, merged into the position chart
     battery: { chart: null, points: [], range: 'all', color: '#5A7D5A', showTrend: true, showForecast: false, selection: null }
   };
   var FORECAST_DAYS = 10; // horizon of the forecast curve, in days
+
+  // ---- MeteoSwiss OGD hourly temperature, station Fribourg/Grangeneuve (GRA) ----
+  // Open Government Data published on data.geo.admin.ch (collection
+  // ch.meteoschweiz.ogd-smn), no API key, CORS enabled. The "recent" file
+  // covers the last weeks and the "now" file the latest hours; both are
+  // fetched and merged/deduplicated on first use, then kept in memory.
+  var TEMP_BASE_URLS = [
+    'https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/explicit/valid/',
+    'https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/'
+  ];
+  var TEMP_FILES = ['ogd-smn_gra_h_recent.csv', 'ogd-smn_gra_h_now.csv'];
+  var tempCache = null;   // Promise -> [{x: Date, y: °C}] sorted by time
+  var tempLastX = null;   // timestamp (ms) of the most recent reading seen
+  function fetchTempCsv(name) {
+    return fetch(TEMP_BASE_URLS[0] + name).catch(function() {
+      return fetch(TEMP_BASE_URLS[1] + name); // fallback if layout changes
+    }).then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.arrayBuffer();
+    }).then(function(buf) {
+      // files are Windows-1252 encoded with ';' separators
+      var text = new TextDecoder('windows-1252').decode(buf);
+      var lines = text.split(/\r\n|\n|\r/);
+      if (!lines.length) throw new Error('empty csv');
+      var cols = lines[0].split(';').map(function(c) { return c.trim().toLowerCase(); });
+      var iTime = cols.indexOf('reference_timestamp');
+      var iTemp = cols.indexOf('tre200h0'); // air 2m height, hourly mean, °C
+      if (iTime < 0 || iTemp < 0) throw new Error('columns not found');
+      var out = [];
+      for (var i = 1; i < lines.length; i++) {
+        if (!lines[i]) continue;
+        var f = lines[i].split(';');
+        var t = Date.parse(f[iTime]);
+        var v = parseFloat((f[iTemp] || '').replace(',', '.'));
+        if (isFinite(t) && isFinite(v)) out.push({ x: new Date(t), y: v });
+      }
+      return out.sort(function(a, b) { return a.x - b.x; });
+    });
+  }
+  function loadTempSeries() {
+    if (!tempCache) {
+      tempCache = Promise.all(TEMP_FILES.map(function(n) {
+        return fetchTempCsv(n).catch(function() { return []; });
+      })).then(function(parts) {
+        var map = {};
+        parts.forEach(function(arr) {
+          arr.forEach(function(p) { map[p.x.getTime()] = p; });
+        });
+        return Object.keys(map).map(function(k) { return map[k]; })
+          .sort(function(a, b) { return a.x - b.x; });
+      });
+    }
+    return tempCache;
+  }
 
   // ---- merged position series helpers ---------------------------------
   // The position card displays either the ABSOLUTE or the RELATIVE sensor
@@ -1550,9 +1617,38 @@ Position actuelle : 34.50 mm</div>
     };
   }
 
+  // ---- MeteoSwiss GRA temperature dataset + right-hand °C axis ----------
+  var TEMP_COLOR = '#2E6FAC';
+  function makeTempDataset(tempData) {
+    return {
+      label: 'temp',
+      data: tempData,
+      borderColor: TEMP_COLOR,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      tension: 0.35,
+      cubicInterpolationMode: 'monotone',
+      spanGaps: true,
+      yAxisID: 'yTemp',
+      order: 2
+    };
+  }
+  function tempAxisConfig(colors) {
+    return {
+      position: 'right',
+      ticks: { color: TEMP_COLOR, font: { family: 'IBM Plex Mono', size: 10 }, callback: function(v) { return v + '°C'; } },
+      grid: { drawOnChartArea: false },
+      title: { display: true, text: '°C (GRA)', color: TEMP_COLOR, font: { family: 'IBM Plex Sans', size: 10 } }
+    };
+  }
+
   // keep the same pixels-per-millisecond ratio when re-rendering after a
   // range/trend change, unless we are doing a full reset
   function computeTimeBounds(chart, points, preserveScale) {
+
     var dmin = points[0].x.getTime();
     var dmax = points[points.length - 1].x.getTime();
     if (dmax <= dmin) dmax = dmin + 1000;
@@ -1568,7 +1664,7 @@ Position actuelle : 34.50 mm</div>
     return { min: min, max: max, reset: true };
   }
 
-  function buildChart(canvas, points, color, showTrend, unit, key, showForecast) {
+  function buildChart(canvas, points, color, showTrend, unit, key, showForecast, tempData) {
     unit = unit || 'mm';
     var colors = getColors();
     var series = points.map(function(p) { return { x: p.x, y: p.y }; });
@@ -1610,6 +1706,8 @@ Position actuelle : 34.50 mm</div>
       var fDs = makeForecastDataset(key, points, trendAll, null);
       if (fDs) datasets.push(fDs);
     }
+    // MeteoSwiss GRA hourly temperature on its own right-hand °C axis
+    if (tempData && tempData.length) datasets.push(makeTempDataset(tempData));
     var chart = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: { datasets: datasets },
@@ -1629,7 +1727,10 @@ Position actuelle : 34.50 mm</div>
                 var d = new Date(typeof items[0].parsed.x === 'number' ? items[0].parsed.x : items[0].raw.x);
                 return formatLabel(d);
               },
-              label: function(ctx) { return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit; }
+              label: function(ctx) {
+                if (ctx.dataset.label === 'temp') return ctx.parsed.y.toFixed(1).replace('.', ',') + ' °C';
+                return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
+              }
             }
           },
           zoom: {
@@ -1683,7 +1784,8 @@ Position actuelle : 34.50 mm</div>
             ticks: { color: colors.ink, maxTicksLimit: 8, source: 'timestamp', font: { family: 'IBM Plex Mono', size: 10 } },
             grid: { display: false }
           },
-          y: { ticks: { color: colors.ink, font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: colors.grid } }
+          y: { ticks: { color: colors.ink, font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: colors.grid } },
+          yTemp: tempData && tempData.length ? tempAxisConfig(colors) : { display: false }
         }
       }
     });
@@ -1697,7 +1799,7 @@ Position actuelle : 34.50 mm</div>
     return chart;
   }
 
-  function updateChart(chart, points, color, showTrend, unit, preserveScale, key, showForecast) {
+  function updateChart(chart, points, color, showTrend, unit, preserveScale, key, showForecast, tempData) {
     unit = unit || 'mm';
     chart._unit = unit;
     var series = points.map(function(p) { return { x: p.x, y: p.y }; });
@@ -1710,8 +1812,14 @@ Position actuelle : 34.50 mm</div>
     chart.data.datasets[0].borderColor = color;
     if (chart.options.plugins.tooltip.callbacks.label) {
       chart.options.plugins.tooltip.callbacks.label = function(ctx) {
+        if (ctx.dataset.label === 'temp') return ctx.parsed.y.toFixed(1).replace('.', ',') + ' °C';
         return ctx.parsed.y.toFixed(2).replace('.', ',') + ' ' + unit;
       };
+    }
+    // temperature dataset management (removed here, re-inserted LAST at the
+    // end of this function so it always sits after series/trend/forecast)
+    for (var ti = chart.data.datasets.length - 1; ti >= 1; ti--) {
+      if (chart.data.datasets[ti].label === 'temp') { chart.data.datasets.splice(ti, 1); }
     }
     // forecast dataset management (always the LAST dataset when present)
     var fIdx = -1;
@@ -1739,6 +1847,10 @@ Position actuelle : 34.50 mm</div>
       if (fIdx !== -1) chart.data.datasets[fIdx] = fDs;
       else chart.data.datasets.push(fDs);
     }
+    // re-insert the temperature dataset LAST + toggle its right-hand °C axis
+    var tData = tempData && tempData.length ? tempData : null;
+    if (tData) chart.data.datasets.push(makeTempDataset(tData));
+    chart.options.scales.yTemp = tData ? tempAxisConfig(colors) : { display: false };
     if (preserveScale && !chart._zoomed) {
       // keep the current time-window width (uniform temporal scale)
       var vis = currentVisibleRange(chart);
@@ -1947,13 +2059,48 @@ Position actuelle : 34.50 mm</div>
     var entry = store[key];
     var unit = key === 'battery' ? 'V' : 'mm';
     var filtered = filterByRange(posPoints(key), entry.range);
+    // temperature overlay is only ever shown on the position chart; when it
+    // is on but the data has not arrived yet, kick off a background load and
+    // re-render as soon as it resolves
+    var tempData = null;
+    if (key === 'position' && entry.showTemp) {
+      if (tempCache) {
+        tempData = tempState.data;
+        if (tempState.status === 'loading') {
+          tempCache.then(function() { renderEntry('position', posCanvas, preserveScale); }).catch(function() {});
+        }
+      } else {
+        startTempLoad();
+      }
+    }
     if (!entry.chart) {
       Chart.register(selectionPlugin);
-      entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit, key, entry.showForecast);
+      entry.chart = buildChart(canvas, filtered, entry.color, entry.showTrend, unit, key, entry.showForecast, tempData);
     } else {
-      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit, preserveScale, key, entry.showForecast);
+      updateChart(entry.chart, filtered, entry.color, entry.showTrend, unit, preserveScale, key, entry.showForecast, tempData);
     }
     renderTrendReadout(key, filtered);
+  }
+
+  // ---- temperature load state (GRA hourly, MeteoSwiss OGD) --------------
+  var tempState = { status: 'idle', data: [] };
+  function startTempLoad() {
+    tempState.status = 'loading';
+    tempCache = loadTempSeries();
+    tempCache.then(function(points) {
+      tempState.data = points;
+      tempState.status = points.length ? 'ok' : 'error';
+      if (points.length) tempLastX = points[points.length - 1].x.getTime();
+      if (store.position.showTemp) {
+        renderEntry('position', posCanvas, true);
+        updatePositionValue();
+        renderTempFootNote();
+      }
+    }).catch(function() {
+      tempState.status = 'error';
+      tempCache = null; // allow retry on next toggle
+      if (store.position.showTemp) { renderEntry('position', posCanvas, true); renderTempFootNote(); }
+    });
   }
 
   // remember the raw last reading per chart so localized footers can be
@@ -2085,7 +2232,30 @@ Position actuelle : 34.50 mm</div>
     if (typeof shown !== 'number') { valueEl.textContent = '—'; return; }
     var txt = shown.toFixed(2).replace('.', ',') + ' mm';
     if (typeof other === 'number') txt += ' / ' + other.toFixed(2).replace('.', ',') + ' mm';
+    // when the GRA temperature overlay is on, show its latest reading too
+    if (store.position.showTemp && tempState.status === 'ok' && tempState.data.length) {
+      var lt = tempState.data[tempState.data.length - 1];
+      txt += ' · 🌡 ' + lt.y.toFixed(1).replace('.', ',') + ' °C';
+    }
     valueEl.textContent = txt;
+  }
+
+  // localized footer note under the position chart when the temperature
+  // overlay is displayed (source attribution + fetch status)
+  function renderTempFootNote() {
+    var footEl = document.getElementById('chartFootPosition');
+    if (!footEl || !store.position.chart) return;
+    if (!store.position.showTemp) return; // "last reading" line is owned by refreshPosition
+    var meta = liveMeta.position;
+    var base = '';
+    if (meta && meta.state === 'ok') base = t().updated + formatLiveDate(meta.x);
+    else if (meta && meta.state === 'nodata') base = t().noData;
+    else if (meta && meta.state === 'error') base = t().error;
+    var note = '';
+    if (tempState.status === 'loading') note = '<span class="trend-note">' + i18nGet('live.tempToggle') + '…</span>';
+    else if (tempState.status === 'error') note = '<span class="trend-note">' + i18nGet('live.tempError') + '</span>';
+    else if (tempState.status === 'ok') note = '<br><span class="trend-note" style="color:' + TEMP_COLOR + '">' + i18nGet('live.tempSource') + '</span>';
+    footEl.innerHTML = base + (note ? ' ' + note : '');
   }
 
   function refreshAll() {
@@ -2158,6 +2328,20 @@ Position actuelle : 34.50 mm</div>
       store[key].showForecast = !store[key].showForecast;
       btn.classList.toggle('active', store[key].showForecast);
       renderEntry(key, canvasForKey(key), true);
+    });
+  });
+
+  // temperature toggle wiring (position chart only — MeteoSwiss GRA hourly OGD)
+  document.querySelectorAll('.temp-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var key = btn.getAttribute('data-chart');
+      if (key !== 'position') return;
+      store.position.showTemp = !store.position.showTemp;
+      btn.classList.toggle('active', store.position.showTemp);
+      if (store.position.showTemp && !tempCache) startTempLoad();
+      renderEntry('position', posCanvas, true);
+      updatePositionValue();
+      renderTempFootNote();
     });
   });
 
