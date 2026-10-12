@@ -1335,23 +1335,34 @@ Position actuelle : 34.50 mm</div>
 
   // ---- MeteoSwiss OGD hourly temperature, station Fribourg/Grangeneuve (GRA) ----
   // Open Government Data published on data.geo.admin.ch (collection
-  // ch.meteoschweiz.ogd-smn), no API key, CORS enabled. The "recent" file
-  // covers the last weeks and the "now" file the latest hours; both are
-  // fetched and merged/deduplicated on first use, then kept in memory.
+  // ch.meteoschweiz.ogd-smn), no API key, CORS enabled. Files live under
+  // /ch.meteoschweiz.ogd-smn/gra/: the "recent" file covers the current year
+  // hour-by-hour (so it spans the whole measurement campaign since Sept 2026)
+  // and the "now" file the latest hours. All are fetched, merged and
+  // deduplicated on first use, then kept in memory.
   var TEMP_BASE_URLS = [
-    'https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/explicit/valid/',
-    'https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/'
+    'https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gra/',
+    'https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/explicit/valid/'
   ];
   var TEMP_FILES = ['ogd-smn_gra_h_recent.csv', 'ogd-smn_gra_h_now.csv'];
   var tempCache = null;   // Promise -> [{x: Date, y: °C}] sorted by time
   var tempLastX = null;   // timestamp (ms) of the most recent reading seen
+  // CSV timestamps are "dd.mm.yyyy HH:MM" in UTC — Date.parse cannot read
+  // that format reliably, so parse the fields manually.
+  function parseTempTimestamp(s) {
+    var m = /^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2})/.exec(String(s).trim());
+    if (!m) return NaN;
+    return Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
+  }
   function fetchTempCsv(name) {
-    return fetch(TEMP_BASE_URLS[0] + name).catch(function() {
-      return fetch(TEMP_BASE_URLS[1] + name); // fallback if layout changes
-    }).then(function(res) {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.arrayBuffer();
-    }).then(function(buf) {
+    function attempt(i) {
+      if (i >= TEMP_BASE_URLS.length) return Promise.reject(new Error('all bases failed'));
+      return fetch(TEMP_BASE_URLS[i] + name).then(function(res) {
+        if (!res.ok) return attempt(i + 1);
+        return res.arrayBuffer();
+      });
+    }
+    return attempt(0).then(function(buf) {
       // files are Windows-1252 encoded with ';' separators
       var text = new TextDecoder('windows-1252').decode(buf);
       var lines = text.split(/\r\n|\n|\r/);
@@ -1364,7 +1375,7 @@ Position actuelle : 34.50 mm</div>
       for (var i = 1; i < lines.length; i++) {
         if (!lines[i]) continue;
         var f = lines[i].split(';');
-        var t = Date.parse(f[iTime]);
+        var t = parseTempTimestamp(f[iTime]);
         var v = parseFloat((f[iTemp] || '').replace(',', '.'));
         if (isFinite(t) && isFinite(v)) out.push({ x: new Date(t), y: v });
       }
@@ -1720,7 +1731,12 @@ Position actuelle : 34.50 mm</div>
           legend: { display: false },
           crackmeterSelection: { showBand: true },
           tooltip: {
-            filter: function(ctx) { return ctx.datasetIndex === 0; },
+            // show the main series and the temperature overlay in tooltips,
+            // but never the trend / forecast helper datasets
+            filter: function(ctx) {
+              var l = ctx.chart.data.datasets[ctx.datasetIndex] && ctx.chart.data.datasets[ctx.datasetIndex].label;
+              return ctx.datasetIndex === 0 || l === 'temp';
+            },
             callbacks: {
               title: function(items) {
                 if (!items.length) return '';
@@ -2086,6 +2102,7 @@ Position actuelle : 34.50 mm</div>
   var tempState = { status: 'idle', data: [] };
   function startTempLoad() {
     tempState.status = 'loading';
+    renderTempFootNote(); // show the localized "loading…" note right away
     tempCache = loadTempSeries();
     tempCache.then(function(points) {
       tempState.data = points;
@@ -2244,15 +2261,22 @@ Position actuelle : 34.50 mm</div>
   // overlay is displayed (source attribution + fetch status)
   function renderTempFootNote() {
     var footEl = document.getElementById('chartFootPosition');
-    if (!footEl || !store.position.chart) return;
-    if (!store.position.showTemp) return; // "last reading" line is owned by refreshPosition
+    if (!footEl) return;
+    if (!store.position.showTemp) {
+      // overlay switched off: restore the plain "last reading" footer line
+      var m0 = liveMeta.position;
+      if (m0 && m0.state === 'ok') footEl.textContent = t().updated + formatLiveDate(m0.x);
+      else if (m0 && m0.state === 'nodata') footEl.textContent = t().noData;
+      else if (m0 && m0.state === 'error') footEl.textContent = t().error;
+      return;
+    }
     var meta = liveMeta.position;
     var base = '';
     if (meta && meta.state === 'ok') base = t().updated + formatLiveDate(meta.x);
     else if (meta && meta.state === 'nodata') base = t().noData;
     else if (meta && meta.state === 'error') base = t().error;
     var note = '';
-    if (tempState.status === 'loading') note = '<span class="trend-note">' + i18nGet('live.tempToggle') + '…</span>';
+    if (tempState.status === 'loading') note = '<span class="trend-note">' + i18nGet('live.loading') + '</span>';
     else if (tempState.status === 'error') note = '<span class="trend-note">' + i18nGet('live.tempError') + '</span>';
     else if (tempState.status === 'ok') note = '<br><span class="trend-note" style="color:' + TEMP_COLOR + '">' + i18nGet('live.tempSource') + '</span>';
     footEl.innerHTML = base + (note ? ' ' + note : '');
