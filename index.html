@@ -1870,7 +1870,7 @@ Position actuelle : 34.50 mm</div>
   }
 
   // ---- MeteoSwiss GRA temperature dataset + right-hand °C axis ----------
-  var TEMP_COLOR = '#4CC9E8';
+  var TEMP_COLOR = '#E23B3B'; // red — temperature curve on the position chart
   function makeTempDataset(tempData) {
     return {
       label: 'temp',
@@ -2615,9 +2615,9 @@ Position actuelle : 34.50 mm</div>
   // XML parts, deflate not required by Excel/LibreOffice/Sheets) with exactly
   // two columns — Date-Time and the measured value (mm or V depending on sensor).
   var EXPORT_LABELS = {
-    fr: { date: 'Date-Heure', value: 'Valeur mesuree' },
-    en: { date: 'Date-Time', value: 'Measured value' },
-    de: { date: 'Datum-Zeit', value: 'Messwert' }
+    fr: { date: 'Date-Heure', value: 'Valeur mesuree', temp: 'Temperature air (degC)' },
+    en: { date: 'Date-Time', value: 'Measured value', temp: 'Air temperature (degC)' },
+    de: { date: 'Datum-Zeit', value: 'Messwert', temp: 'Lufttemperatur (degC)' }
   };
   var EXPORT_TITLES = { position: 'position', relposition: 'position-relative', battery: 'tension-batterie' };
 
@@ -2690,25 +2690,52 @@ Position actuelle : 34.50 mm</div>
             / 86400000) + 25569;
   }
 
-  function buildXlsxParts(points, labels) {
+  // Nearest hourly temperature reading for a given timestamp (MeteoSwiss GRA).
+  // tempData is sorted by time; we snap to the closest hour so every crackmeter
+  // record (30-min step) gets exactly one aligned temperature value.
+  function nearestTempAt(tempData, t) {
+    if (!tempData || !tempData.length) return null;
+    var lo = 0, hi = tempData.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi) >> 1;
+      if (tempData[mid].x.getTime() < t) lo = mid + 1; else hi = mid;
+    }
+    var best = tempData[lo];
+    if (lo > 0 && Math.abs(tempData[lo - 1].x.getTime() - t) < Math.abs(best.x.getTime() - t)) {
+      best = tempData[lo - 1];
+    }
+    return best.y;
+  }
+
+  function buildXlsxParts(points, labels, tempData) {
     var ST_HDR = 1, ST_DT = 2; // cellXfs style indexes (bold header, datetime format)
+    var withTemp = !!tempData && tempData.length > 0;
     var sharedStrings = [labels.date, labels.value];
+    if (withTemp) sharedStrings.push(labels.temp);
     var rows = '<row r="1"><c r="A1" s="' + ST_HDR + '" t="s"><v>0</v></c>' +
-               '<c r="B1" s="' + ST_HDR + '" t="s"><v>1</v></c></row>';
+               '<c r="B1" s="' + ST_HDR + '" t="s"><v>1</v></c>' +
+               (withTemp ? '<c r="C1" s="' + ST_HDR + '" t="s"><v>2</v></c>' : '') + '</row>';
     for (var i = 0; i < points.length; i++) {
       var r = i + 2;
       rows += '<row r="' + r + '">' +
         '<c r="A' + r + '" s="' + ST_DT + '"><v>' + excelSerial(points[i].x) + '</v></c>' +
-        '<c r="B' + r + '"><v>' + points[i].y + '</v></c></row>';
+        '<c r="B' + r + '"><v>' + points[i].y + '</v></c>';
+      if (withTemp) {
+        var tv = nearestTempAt(tempData, points[i].x.getTime());
+        if (tv !== null) rows += '<c r="C' + r + '"><v>' + tv + '</v></c>';
+      }
+      rows += '</row>';
     }
     var lastRow = points.length + 1;
+    var lastCol = withTemp ? 'C' : 'B';
     var sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-      '<dimension ref="A1:B' + lastRow + '"/>' +
+      '<dimension ref="A1:' + lastCol + lastRow + '"/>' +
       '<sheetViews><sheetView workbookViewId="0">' +
       '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
       '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>' +
-      '<cols><col min="1" max="1" width="20" customWidth="1"/><col min="2" max="2" width="16" customWidth="1"/></cols>' +
+      '<cols><col min="1" max="1" width="20" customWidth="1"/><col min="2" max="2" width="16" customWidth="1"/>' +
+      (withTemp ? '<col min="3" max="3" width="22" customWidth="1"/>' : '') + '</cols>' +
       '<sheetData>' + rows + '</sheetData></worksheet>';
     var stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
@@ -2770,17 +2797,27 @@ Position actuelle : 34.50 mm</div>
     if (!entry || !pts.length) return;
     var lang = document.documentElement.lang || 'fr';
     var labels = EXPORT_LABELS[lang] || EXPORT_LABELS.fr;
-    var blob = buildZip(buildXlsxParts(pts, labels));
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    var d = new Date();
-    a.href = url;
-    a.download = 'crackmeter-' + EXPORT_TITLES[key] + '-' +
-      pad4(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate()) + '.xlsx';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+    function emit(tempData) {
+      var blob = buildZip(buildXlsxParts(pts, labels, tempData));
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var d = new Date();
+      a.href = url;
+      a.download = 'crackmeter-' + EXPORT_TITLES[key] + '-' +
+        pad4(d.getFullYear()) + pad(d.getMonth() + 1) + pad(d.getDate()) + '.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+    }
+    // Position exports include the MeteoSwiss GRA air temperature, snapped to
+    // each crackmeter record's timestamp (one value per measurement step).
+    if (key === 'position' && typeof loadTempSeries === 'function') {
+      loadTempSeries().then(function(td) { emit(td && td.length ? td : null); })
+                      .catch(function() { emit(null); });
+    } else {
+      emit(null);
+    }
   }
 
   document.querySelectorAll('.download-btn').forEach(function(btn) {
