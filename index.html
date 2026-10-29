@@ -65,7 +65,7 @@
   a { color: inherit; }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
 
-  header { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  header { position: sticky; top: 0; z-index: 21; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
   .headbar { max-width: var(--maxw); margin: 0 auto; padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; }
   .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
   .logo svg { width: 20px; height: 20px; flex-shrink: 0; }
@@ -75,6 +75,29 @@
   nav.links a { text-decoration: none; }
   nav.links a:hover { color: var(--ink); }
   @media (max-width: 760px) { nav.links { display: none; } }
+
+  /* ---------- section tabs (sticky bar under the header) ---------- */
+  .section-tabs {
+    position: sticky; top: 61px; z-index: 19; background: var(--bg);
+    border-bottom: 1px solid var(--line); display: flex; justify-content: center; gap: 6px;
+    padding: 8px 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  header.compact .headbar { padding-top: 9px; padding-bottom: 9px; }
+  .headbar { transition: padding .2s ease; }
+  .section-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 0.9rem; color: var(--stone);
+    background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 8px 18px;
+    cursor: pointer; white-space: nowrap; transition: color .15s, background .15s;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { background: var(--accent); color: var(--accent-ink); }
+  .hero .crack-divider { margin-bottom: 44px; }
+  body:not(.tabs-on) .section-tabs { display: none; }
+  @media (min-width: 761px) { body.tabs-on .hero { padding-top: 44px; } }
+  @media (max-width: 760px) {
+    .section-tabs { display: none !important; }
+  }
   .btn { display: inline-block; background: var(--accent); color: var(--accent-ink); padding: 10px 20px; border-radius: var(--radius); text-decoration: none; font-weight: 500; font-size: 0.95rem; border: 1px solid transparent; white-space: nowrap; }
   .btn:hover { filter: brightness(1.06); }
   .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
@@ -324,7 +347,13 @@
     .stat { padding: 16px 12px; }
     .chart-card { padding: 16px 14px; }
     .chart-head { flex-direction: column; gap: 4px; }
-    .chart-toolbar { gap: 8px; }
+    .chart-toolbar {
+      gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; padding-bottom: 4px; margin-left: -4px; padding-left: 4px;
+    }
+    .chart-toolbar::-webkit-scrollbar { display: none; }
+    .range-group { flex-shrink: 0; }
+    .mode-btn { flex-shrink: 0; }
     .range-btn { padding: 7px 9px; font-size: 0.7rem; }
     .trend-btn { padding: 6px 10px; }
     .reset-zoom-btn { padding: 6px 4px; }
@@ -396,6 +425,14 @@
   </div>
 </header>
 
+<nav class="section-tabs" id="sectionTabs" aria-label="Sections">
+  <button type="button" class="tab-btn" data-tab-target="#fonctionnement" data-i18n="nav.fonctionnement">Fonctionnement</button>
+  <button type="button" class="tab-btn" data-tab-target="#instrumentation" data-i18n="nav.instrumentation">Instrumentation</button>
+  <button type="button" class="tab-btn" data-tab-target="#donnees" data-i18n="nav.donnees">Données</button>
+  <button type="button" class="tab-btn" data-tab-target="#couts" data-i18n="nav.couts">Coûts</button>
+  <button type="button" class="tab-btn" data-tab-target="#equipe" data-i18n="nav.tab.equipe">Équipe</button>
+</nav>
+
 <section class="hero">
   <div class="wrap">
     <h1 data-i18n="hero.h1">La surveillance des fissures rocheuses, pour un prix avantageux et un encombrement minimum.</h1>
@@ -407,12 +444,11 @@
       <div class="stat"><div class="num mono" data-i18n="stat.autonomyValue">≥ 2 ans</div><div class="lbl" data-i18n="stat.autonomy">AUTONOMIE</div></div>
       <div class="stat"><div class="num mono" data-count="220" data-prefix="" data-suffix=".–">0.–</div><div class="lbl" data-i18n="stat.price">CHF / STATION**</div></div>
     </div>
-  </div>
-</section>
-
-<svg class="crack-divider animated" id="heroCrack" viewBox="0 0 1080 26" preserveAspectRatio="none" aria-hidden="true">
+    <svg class="crack-divider animated" id="heroCrack" viewBox="0 0 1080 26" preserveAspectRatio="none" aria-hidden="true">
   <path d="M0 13 L120 13 L140 4 L165 22 L190 13 L340 13 L360 20 L380 6 L400 13 L620 13 L640 5 L660 21 L680 13 L900 13 L920 19 L940 7 L960 13 L1080 13"/>
 </svg>
+  </div>
+</section>
 
 <section id="fonctionnement">
   <div class="wrap">
@@ -511,7 +547,7 @@
   </div>
 </section>
 
-<section>
+<section id="demo-seuil">
   <div class="wrap">
     <div class="section-head">
       <div class="kicker" data-i18n="demo.kicker">Aperçu</div>
@@ -671,7 +707,7 @@ Position actuelle : 34.50 mm</div>
   </div>
 </section>
 
-<section class="alt">
+<section class="alt" id="notice-section">
   <div class="wrap">
     <div class="notice">
       <h3 data-i18n="notice.h3">Ce qu'il faut savoir avant de nous contacter</h3>
@@ -737,6 +773,157 @@ Position actuelle : 34.50 mm</div>
 </footer>
 
 <script>
+/* ---------- Section tabs: desktop pill bar + mobile bottom tab bar ---------- */
+(function() {
+  var TABS = [
+    { sel: '#fonctionnement', ico: '\u{1F4A1}', fr: 'Fonctionnement', de: 'Funktionsweise', en: 'How it works' },
+    { sel: '#instrumentation', ico: '\u{1F527}', fr: 'Instrument.', de: 'Instrumentierung', en: 'Instrument.' },
+    { sel: '#donnees', ico: '\u{1F4C8}', fr: 'Données', de: 'Daten', en: 'Data' },
+    { sel: '#couts', ico: '\u{1F4B0}', fr: 'Coûts', de: 'Kosten', en: 'Pricing' },
+    { sel: '#equipe', ico: '\u{1F465}', fr: 'Équipe', de: 'Team', en: 'Team' }
+  ];
+  document.body.classList.add('tabs-on');
+
+  function lang() { return (document.documentElement.lang || 'fr').toLowerCase(); }
+
+  /* mobile bottom bar */
+  var mbar = document.createElement('nav');
+  mbar.className = 'mobile-tabbar';
+  mbar.setAttribute('aria-label', 'Sections');
+  TABS.forEach(function(t) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'm-tab';
+    b.setAttribute('data-tab-target', t.sel);
+    b.innerHTML = '<span class="m-ico" aria-hidden="true">' + t.ico + '</span><span>' + (t[lang()] || t.fr) + '</span>';
+    mbar.appendChild(b);
+  });
+  document.body.appendChild(mbar);
+
+  var style = document.createElement('style');
+  style.textContent = [
+    '.mobile-tabbar { display: none; }',
+    '@media (max-width: 760px) {',
+    '  .mobile-tabbar {',
+    '    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;',
+    '    display: flex; background: color-mix(in srgb, var(--bg) 94%, transparent);',
+    '    backdrop-filter: blur(10px); border-top: 1px solid var(--line);',
+    '    padding: 4px 4px calc(4px + env(safe-area-inset-bottom));',
+    '    box-shadow: 0 -6px 20px rgba(0,0,0,0.06);',
+    '  }',
+    '  .m-tab {',
+    '    flex: 1 1 0; min-width: 0; min-height: 52px; display: flex; flex-direction: column;',
+    '    align-items: center; justify-content: center; gap: 3px;',
+    '    font-family: \'Space Grotesk\', sans-serif; font-weight: 500;',
+    '    font-size: 0.66rem; line-height: 1.1; color: var(--stone); background: transparent;',
+    '    border: none; border-radius: 12px; padding: 7px 2px; cursor: pointer;',
+    '    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;',
+    '  }',
+    '  .m-tab .m-ico { font-size: 1.15rem; line-height: 1; }',
+    '  .m-tab.active { color: var(--accent); }',
+    '  body.tabs-on { padding-bottom: 68px; }',
+    '}'
+  ].join('\n');
+  document.head.appendChild(style);
+
+  var allTabs = function() { return document.querySelectorAll('.tab-btn, .m-tab'); };
+
+  /* keep scroll offsets in sync with the real header/tabs heights */
+  function updateStickyOffsets() {
+    var headerEl = document.querySelector('header');
+    var tabsEl = document.getElementById('sectionTabs');
+    var h = (headerEl ? headerEl.offsetHeight : 60) + (tabsEl && tabsEl.offsetParent !== null ? tabsEl.offsetHeight : 0);
+    if (tabsEl) tabsEl.style.top = (headerEl ? headerEl.offsetHeight : 60) + 'px';
+    document.documentElement.style.scrollPaddingTop = (h + 8) + 'px';
+  }
+  window.addEventListener('load', updateStickyOffsets);
+  updateStickyOffsets();
+
+  function setActive(sel) {
+    allTabs().forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-tab-target') === sel);
+    });
+  }
+
+  function scrollToSection(sel) {
+    var el = document.querySelector(sel);
+    if (!el) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    if (history.replaceState) history.replaceState(null, '', sel);
+    setActive(sel);
+  }
+
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('[data-tab-target]') : null;
+    if (btn) { e.preventDefault(); scrollToSection(btn.getAttribute('data-tab-target')); }
+  });
+
+  /* scroll-spy: highlight the tab of the section currently in view */
+  var GROUPS = {
+    '#fonctionnement': ['#fonctionnement', '#terrain', '#cas-reel'],
+    '#instrumentation': ['#instrumentation', '#demo-seuil', '#materiel'],
+    '#donnees': ['#donnees', '#avantages'],
+    '#couts': ['#couts', '#notice-section'],
+    '#equipe': ['#equipe', '#contact']
+  };
+  var ordered = [];
+  Object.keys(GROUPS).forEach(function(tab) {
+    GROUPS[tab].forEach(function(s) { ordered.push({ sel: s, tab: tab }); });
+  });
+  var resolved = ordered.map(function(o) { return { el: document.querySelector(o.sel), tab: o.tab }; })
+                        .filter(function(o) { return o.el; });
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function() {
+      ticking = false;
+      var headerEl = document.querySelector('header');
+      var tabsEl = document.getElementById('sectionTabs');
+      var offset = (headerEl ? headerEl.offsetHeight : 60) + (tabsEl && tabsEl.offsetParent !== null ? tabsEl.offsetHeight : 0) + 12;
+      var current = null;
+      for (var i = 0; i < resolved.length; i++) {
+        if (resolved[i].el.getBoundingClientRect().top <= offset) current = resolved[i];
+      }
+      if (current) setActive(current.tab);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function() { updateStickyOffsets(); onScroll(); });
+  onScroll();
+
+  /* compact header when scrolled */
+  var headerEl = document.querySelector('header');
+  var tabsEl2 = document.getElementById('sectionTabs');
+  function updateCompact() {
+    if (!headerEl) return;
+    var compact = window.scrollY > 140;
+    headerEl.classList.toggle('compact', compact);
+    if (tabsEl2) tabsEl2.style.top = (headerEl.offsetHeight) + 'px';
+  }
+  window.addEventListener('scroll', updateCompact, { passive: true });
+  window.addEventListener('resize', updateCompact);
+  updateCompact();
+
+  /* keep labels in sync with language switches */
+  window.addEventListener('cm:langchange', function() {
+    var l = lang();
+    document.querySelectorAll('[data-tab-target]').forEach(function(b) {
+      var t = null;
+      for (var i = 0; i < TABS.length; i++) { if (TABS[i].sel === b.getAttribute('data-tab-target')) { t = TABS[i]; break; } }
+      if (!t) return;
+      if (b.classList.contains('m-tab')) {
+        b.innerHTML = '<span class="m-ico" aria-hidden="true">' + t.ico + '</span><span>' + (t[l] || t.fr) + '</span>';
+      } else {
+        b.textContent = t[l] || t.fr;
+      }
+    });
+  });
+})();
+</script>
+
+<script>
 (function() {
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -790,6 +977,7 @@ Position actuelle : 34.50 mm</div>
       "nav.instrumentation": "Instrumentation",
       "nav.donnees": "Données",
       "nav.couts": "Coûts",
+      "nav.tab.equipe": "Équipe",
       "nav.contact": "Nous contacter",
       "hero.h1": "La surveillance des fissures rocheuses, pour un prix avantageux et un encombrement minimum.",
       "hero.lede": "Le fissuromètre connecté mesure l'écartement d'une fissure avec une précision de 0,01&nbsp;mm, transmet les données en continu et alerte automatiquement par Telegram dès qu'un seuil de vitesse est dépassé — pensé pour instrumenter les sites de dangers naturels non prioritaires, à moindre coût.",
@@ -933,6 +1121,7 @@ Position actuelle : 34.50 mm</div>
       "nav.instrumentation": "Instrumentation",
       "nav.donnees": "Data",
       "nav.couts": "Pricing",
+      "nav.tab.equipe": "Team",
       "nav.contact": "Contact us",
       "hero.h1": "Rock crack monitoring, at an affordable price and a minimal footprint.",
       "hero.lede": "The connected crack gauge measures the opening of a crack with a precision of 0.01&nbsp;mm, transmits data continuously and automatically alerts via Telegram as soon as a speed threshold is exceeded — designed to instrument non-priority natural hazard sites at a lower cost.",
@@ -1076,6 +1265,7 @@ Position actuelle : 34.50 mm</div>
       "nav.instrumentation": "Instrumentierung",
       "nav.donnees": "Daten",
       "nav.couts": "Kosten",
+      "nav.tab.equipe": "Team",
       "nav.contact": "Kontakt",
       "hero.h1": "Felsspaltenüberwachung — zu einem attraktiven Preis und mit minimalem Platzbedarf.",
       "hero.lede": "Der vernetzte Rissmesser erfasst die Öffnung eines Felsspalts mit einer Präzision von 0,01&nbsp;mm, überträgt die Daten fortlaufend und löst automatisch eine Telegram-Alarmierung aus, sobald ein Geschwindigkeitsschwellenwert überschritten wird — konzipiert, um nicht-prioritäre Standorte im Bereich Naturgefahren kostengünstig zu instrumentieren.",
