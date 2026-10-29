@@ -9,44 +9,44 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #E9E5DC;
-    --bg-alt: #DDD8CC;
-    --panel: #F4F1E9;
-    --ink: #211F1B;
-    --stone: #6B6558;
-    --line: rgba(33,31,27,0.14);
-    --accent: #C1601B;
+    --bg: #FBF7EF;
+    --bg-alt: #EEF5EC;
+    --panel: #FFFFFF;
+    --ink: #22382F;
+    --stone: #66756C;
+    --line: rgba(34,56,47,0.12);
+    --accent: #E4572E;
     --accent-ink: #ffffff;
-    --accent-2: #3B6E7A;
-    --safe: #4C7A3D;
-    --alert1: #B08900;
-    --alert2: #C1601B;
-    --alert3: #B23B2E;
-    --radius: 3px;
+    --accent-2: #118AB2;
+    --safe: #06D6A0;
+    --alert1: #FFB703;
+    --alert2: #E4572E;
+    --alert3: #D62839;
+    --radius: 10px;
     --maxw: 1080px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #1C1E1D;
-      --bg-alt: #242624;
-      --panel: #262826;
-      --ink: #EEECE4;
-      --stone: #9A9488;
-      --line: rgba(238,236,228,0.14);
-      --accent: #E2843F;
-      --accent-ink: #1C1E1D;
-      --accent-2: #7FAAB5;
-      --safe: #82B26E;
-      --alert1: #E0B840;
-      --alert2: #E2843F;
-      --alert3: #E0645A;
+      --bg: #131A17;
+      --bg-alt: #18211D;
+      --panel: #1E2823;
+      --ink: #EDF2EA;
+      --stone: #9AA8A0;
+      --line: rgba(237,242,234,0.13);
+      --accent: #FF7F50;
+      --accent-ink: #131A17;
+      --accent-2: #4CC9E8;
+      --safe: #3BE0B0;
+      --alert1: #FFC94D;
+      --alert2: #FF7F50;
+      --alert3: #FF6B6B;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #1C1E1D; --bg-alt: #242624; --panel: #262826; --ink: #EEECE4;
-    --stone: #9A9488; --line: rgba(238,236,228,0.14); --accent: #E2843F;
-    --accent-ink: #1C1E1D; --accent-2: #7FAAB5; --safe: #82B26E;
-    --alert1: #E0B840; --alert2: #E2843F; --alert3: #E0645A;
+    --bg: #131A17; --bg-alt: #18211D; --panel: #1E2823; --ink: #EDF2EA;
+    --stone: #9AA8A0; --line: rgba(237,242,234,0.13); --accent: #FF7F50;
+    --accent-ink: #131A17; --accent-2: #4CC9E8; --safe: #3BE0B0;
+    --alert1: #FFC94D; --alert2: #FF7F50; --alert3: #FF6B6B;
   }
 
   * { box-sizing: border-box; }
@@ -66,36 +66,31 @@
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
 
   header { position: sticky; top: 0; z-index: 21; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-  .headbar { max-width: var(--maxw); margin: 0 auto; padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .headbar { max-width: var(--maxw); margin: 0 auto; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
   .logo svg { width: 20px; height: 20px; flex-shrink: 0; }
   .logo .logo-tag { font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 0.72rem; color: var(--stone); letter-spacing: 0; text-transform: none; border-left: 1px solid var(--line); padding-left: 8px; margin-left: 2px; }
   @media (max-width: 560px) { .logo .logo-tag { display: none; } }
-  nav.links { display: flex; gap: 24px; font-size: 0.93rem; color: var(--stone); }
-  nav.links a { text-decoration: none; }
-  nav.links a:hover { color: var(--ink); }
-  @media (max-width: 760px) { nav.links { display: none; } }
-
-  /* ---------- section tabs (sticky bar under the header) ---------- */
+  /* ---------- section tabs (sticky pill bar integrated in the header) ---------- */
   .section-tabs {
-    position: sticky; top: 61px; z-index: 19; background: var(--bg);
-    border-bottom: 1px solid var(--line); display: flex; justify-content: center; gap: 6px;
-    padding: 8px 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    display: flex; justify-content: center; gap: 8px; margin-left: auto; margin-right: auto;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px;
+  }
+  .section-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 0.88rem; color: var(--stone);
+    background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 7px 16px;
+    cursor: pointer; white-space: nowrap; transition: color .15s, background .15s, box-shadow .15s;
+  }
+  .tab-btn:hover { color: var(--ink); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .tab-btn.active {
+    background: var(--panel); color: var(--accent); border-color: var(--line);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
   }
   header.compact .headbar { padding-top: 9px; padding-bottom: 9px; }
   .headbar { transition: padding .2s ease; }
-  .section-tabs::-webkit-scrollbar { display: none; }
-  .tab-btn {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 0.9rem; color: var(--stone);
-    background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 8px 18px;
-    cursor: pointer; white-space: nowrap; transition: color .15s, background .15s;
-  }
-  .tab-btn:hover { color: var(--ink); }
-  .tab-btn.active { background: var(--accent); color: var(--accent-ink); }
   .hero .crack-divider { margin-bottom: 44px; }
-  body:not(.tabs-on) .section-tabs { display: none; }
-  @media (min-width: 761px) { body.tabs-on .hero { padding-top: 44px; } }
-  @media (max-width: 760px) {
+  @media (max-width: 900px) {
     .section-tabs { display: none !important; }
   }
   .btn { display: inline-block; background: var(--accent); color: var(--accent-ink); padding: 10px 20px; border-radius: var(--radius); text-decoration: none; font-weight: 500; font-size: 0.95rem; border: 1px solid transparent; white-space: nowrap; }
@@ -261,7 +256,7 @@
 
   /* single column: every chart stretches across the full page width */
   .live-charts { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 40px; }
-  .chart-card { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 22px 24px; }
+  .chart-card { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 22px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
   .mode-group { display: flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
   .mode-btn {
     font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500;
@@ -308,11 +303,11 @@
   .trend-btn.active::before { background: var(--accent); }
   /* forecast toggle: dotted marker + violet accent to match the forecast curve */
   .forecast-btn::before { width: 9px; height: 9px; border-radius: 50%; border: 2px dotted var(--stone); background: transparent; }
-  .forecast-btn.active { color: var(--ink); border-color: #7B5EA7; }
-  .forecast-btn.active::before { border-color: #7B5EA7; }
+  .forecast-btn.active { color: var(--ink); border-color: #9B5DE5; }
+  .forecast-btn.active::before { border-color: #9B5DE5; }
   /* temperature toggle (MeteoSwiss GRA): thermometer glyph + blue accent to match the °C curve */
   .temp-btn::before { content: '\1F321'; font-size: 0.8rem; line-height: 1; }
-  .temp-btn.active { color: var(--ink); border-color: #2E6FAC; }
+  .temp-btn.active { color: var(--ink); border-color: #118AB2; }
   .download-btn {
     font-family: 'IBM Plex Sans', sans-serif; font-size: 0.75rem; font-weight: 500;
     background: transparent; color: var(--stone); border: 1px solid var(--line); border-radius: var(--radius);
@@ -408,11 +403,12 @@
       Crackmeter
       <span class="logo-tag" data-i18n="logoTag">low-cost · Suisse</span>
     </div>
-    <nav class="links">
-      <a href="#fonctionnement" data-i18n="nav.fonctionnement">Fonctionnement</a>
-      <a href="#instrumentation" data-i18n="nav.instrumentation">Instrumentation</a>
-      <a href="#donnees" data-i18n="nav.donnees">Données</a>
-      <a href="#couts" data-i18n="nav.couts">Coûts</a>
+    <nav class="section-tabs" id="sectionTabs" aria-label="Sections">
+      <button type="button" class="tab-btn" data-tab-target="#fonctionnement">Fonctionnement</button>
+      <button type="button" class="tab-btn" data-tab-target="#instrumentation">Instrumentation</button>
+      <button type="button" class="tab-btn" data-tab-target="#donnees">Données</button>
+      <button type="button" class="tab-btn" data-tab-target="#couts">Coûts</button>
+      <button type="button" class="tab-btn" data-tab-target="#equipe">Équipe</button>
     </nav>
     <div class="header-right">
       <div class="lang-switch" role="group" aria-label="Language">
@@ -424,14 +420,6 @@
     </div>
   </div>
 </header>
-
-<nav class="section-tabs" id="sectionTabs" aria-label="Sections">
-  <button type="button" class="tab-btn" data-tab-target="#fonctionnement" data-i18n="nav.fonctionnement">Fonctionnement</button>
-  <button type="button" class="tab-btn" data-tab-target="#instrumentation" data-i18n="nav.instrumentation">Instrumentation</button>
-  <button type="button" class="tab-btn" data-tab-target="#donnees" data-i18n="nav.donnees">Données</button>
-  <button type="button" class="tab-btn" data-tab-target="#couts" data-i18n="nav.couts">Coûts</button>
-  <button type="button" class="tab-btn" data-tab-target="#equipe" data-i18n="nav.tab.equipe">Équipe</button>
-</nav>
 
 <section class="hero">
   <div class="wrap">
@@ -820,20 +808,18 @@ Position actuelle : 34.50 mm</div>
     '    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;',
     '  }',
     '  .m-tab .m-ico { font-size: 1.15rem; line-height: 1; }',
-    '  .m-tab.active { color: var(--accent); }',
-    '  body.tabs-on { padding-bottom: 68px; }',
+    '  .m-tab.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 14px; }',
+    '  body.tabs-on { padding-bottom: 72px; }',
     '}'
   ].join('\n');
   document.head.appendChild(style);
 
   var allTabs = function() { return document.querySelectorAll('.tab-btn, .m-tab'); };
 
-  /* keep scroll offsets in sync with the real header/tabs heights */
+  /* keep scroll offsets in sync with the real header height (tabs live inside it now) */
   function updateStickyOffsets() {
     var headerEl = document.querySelector('header');
-    var tabsEl = document.getElementById('sectionTabs');
-    var h = (headerEl ? headerEl.offsetHeight : 60) + (tabsEl && tabsEl.offsetParent !== null ? tabsEl.offsetHeight : 0);
-    if (tabsEl) tabsEl.style.top = (headerEl ? headerEl.offsetHeight : 60) + 'px';
+    var h = headerEl ? headerEl.offsetHeight : 60;
     document.documentElement.style.scrollPaddingTop = (h + 8) + 'px';
   }
   window.addEventListener('load', updateStickyOffsets);
@@ -880,8 +866,7 @@ Position actuelle : 34.50 mm</div>
     requestAnimationFrame(function() {
       ticking = false;
       var headerEl = document.querySelector('header');
-      var tabsEl = document.getElementById('sectionTabs');
-      var offset = (headerEl ? headerEl.offsetHeight : 60) + (tabsEl && tabsEl.offsetParent !== null ? tabsEl.offsetHeight : 0) + 12;
+      var offset = (headerEl ? headerEl.offsetHeight : 60) + 12;
       var current = null;
       for (var i = 0; i < resolved.length; i++) {
         if (resolved[i].el.getBoundingClientRect().top <= offset) current = resolved[i];
@@ -895,12 +880,10 @@ Position actuelle : 34.50 mm</div>
 
   /* compact header when scrolled */
   var headerEl = document.querySelector('header');
-  var tabsEl2 = document.getElementById('sectionTabs');
   function updateCompact() {
     if (!headerEl) return;
     var compact = window.scrollY > 140;
     headerEl.classList.toggle('compact', compact);
-    if (tabsEl2) tabsEl2.style.top = (headerEl.offsetHeight) + 'px';
   }
   window.addEventListener('scroll', updateCompact, { passive: true });
   window.addEventListener('resize', updateCompact);
@@ -1806,7 +1789,7 @@ Position actuelle : 34.50 mm</div>
     return {
       label: 'forecast',
       data: data,
-      borderColor: '#7B5EA7',
+      borderColor: '#9B5DE5',
       backgroundColor: 'transparent',
       borderWidth: 1.5,
       borderDash: [2, 3],
@@ -1819,7 +1802,7 @@ Position actuelle : 34.50 mm</div>
   }
 
   // ---- MeteoSwiss GRA temperature dataset + right-hand °C axis ----------
-  var TEMP_COLOR = '#2E6FAC';
+  var TEMP_COLOR = '#118AB2';
   function makeTempDataset(tempData) {
     return {
       label: 'temp',
@@ -1949,8 +1932,8 @@ Position actuelle : 34.50 mm</div>
             zoom: {
               drag: {
                 enabled: !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches),
-                backgroundColor: 'rgba(193,96,27,0.15)',
-                borderColor: 'rgba(193,96,27,0.6)',
+                backgroundColor: 'rgba(228,87,46,0.15)',
+                borderColor: 'rgba(228,87,46,0.6)',
                 borderWidth: 1
               },
               wheel: { enabled: true, speed: 0.08, modifierKey: 'ctrl' },
@@ -2134,7 +2117,7 @@ Position actuelle : 34.50 mm</div>
         var horizonDays = Math.max(1, Math.round((lastF.x.getTime() - points[points.length - 1].x.getTime()) / (24 * 60 * 60 * 1000)));
         var delta = lastF.y - points[points.length - 1].y;
         var sign = delta >= 0 ? '+' : '\u2212';
-        html += '<br><span style="color:#7B5EA7">&#9673; ' + i18nGet('live.forecastToggle') + ' (' + horizonDays + ' j)</span>' +
+        html += '<br><span style="color:#9B5DE5">&#9673; ' + i18nGet('live.forecastToggle') + ' (' + horizonDays + ' j)</span>' +
           ' ' + sign + delta.toFixed(digits).replace('.', ',') + ' ' + unit + ' \u2192 ' +
           lastF.y.toFixed(digits).replace('.', ',') + ' ' + unit + ' ' +
           i18nGet('msg.over') + ' ' + formatLabel(lastF.x) +
@@ -2221,9 +2204,9 @@ Position actuelle : 34.50 mm</div>
         if (px2 <= px1) return;
         var ctx2 = chart.ctx;
         ctx2.save();
-        ctx2.fillStyle = 'rgba(193,96,27,0.08)';
+        ctx2.fillStyle = 'rgba(228,87,46,0.08)';
         ctx2.fillRect(px1, area2.top, px2 - px1, area2.bottom - area2.top);
-        ctx2.strokeStyle = 'rgba(193,96,27,0.4)';
+        ctx2.strokeStyle = 'rgba(228,87,46,0.4)';
         ctx2.setLineDash([3, 3]);
         ctx2.beginPath();
         ctx2.moveTo(px1 + 0.5, area2.top); ctx2.lineTo(px1 + 0.5, area2.bottom);
