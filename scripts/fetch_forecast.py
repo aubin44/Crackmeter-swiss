@@ -24,7 +24,7 @@ import urllib.request
 
 STAC_ITEMS = "https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/items"
 PARAMS = ["tre200h0", "treq10h0", "treq90h0"]   # mean, 10 % quantile, 90 % quantile
-UA = {"User-Agent": "crackmeter-forecast/1.0 (+https://github.com/aubin44/fissurometre)"}
+UA = {"User-Agent": "crackmeter-forecast/1.0 (+https://github.com/aubin44/Crackmeter-swiss)"}
 
 
 def get_json(url):
@@ -191,3 +191,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
